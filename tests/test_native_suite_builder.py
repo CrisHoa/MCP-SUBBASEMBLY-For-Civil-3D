@@ -18,7 +18,7 @@ def suite_dir(tmp_path_factory):
     return d
 
 
-def test_build_and_validate_all_11_subassemblies(suite_dir: Path):
+def test_build_and_validate_all_12_subassemblies(suite_dir: Path):
     builders = [
         ("01_PhuiDaoCong", NativeSuiteBuilder.build_01_phui_dao_cong),
         ("02_VetHuuCo_DanhCap", NativeSuiteBuilder.build_02_vet_huu_co_danh_cap),
@@ -31,6 +31,7 @@ def test_build_and_validate_all_11_subassemblies(suite_dir: Path):
         ("09_TuongChan_Cat_III_III", NativeSuiteBuilder.build_09_tuong_chan_cat_3_3),
         ("10_GPC_DUONGQL13_Goc_P10", NativeSuiteBuilder.build_10_gpc_duongql13_goc_p10),
         ("11_BV_QL13_PHAI_Goc_P4", NativeSuiteBuilder.build_11_bv_ql13_phai_goc_p4),
+        ("12_BV_QL13_TRAI_Goc_P4", NativeSuiteBuilder.build_12_bv_ql13_trai_goc_p4),
     ]
 
     for name, build_fn in builders:
