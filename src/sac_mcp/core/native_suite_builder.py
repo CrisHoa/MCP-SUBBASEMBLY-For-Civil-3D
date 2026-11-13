@@ -605,3 +605,143 @@ class NativeSuiteBuilder:
         pkg.save()
         return out_p
 
+
+    @classmethod
+    def build_10_gpc_duongql13_goc_p10(cls, output_path: str | Path, version: str = "2026") -> Path:
+        """Cấu kiện 10: Gờ phân cách QL13 với điểm gốc tại P10 (Mép dải phân cách/đường)."""
+        import zipfile
+        out_p = Path(output_path).resolve()
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        guid = "be9d9d838b3a4120933f22853bda2ef5"
+        
+        tpl_dir = Path(__file__).resolve().parent.parent / "templates"
+        png_path = tpl_dir / "GPC.png"
+        png_bytes = png_path.read_bytes() if png_path.exists() else b""
+
+        atc_content = f"""<?xml version="1.0"?>
+<Category xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ItemID idValue="{{92c699cf-e79e-46f8-b611-c096c6d838a6}}" />
+  <Properties>
+    <ItemName>Category1</ItemName>
+    <Images>
+      <Image cx="93" cy="123" />
+    </Images>
+  </Properties>
+  <CustomData />
+  <Source />
+  <Palettes />
+  <Packages />
+  <Tools>
+    <Tool Name="GPC_TUYENQL13_P10">
+      <ItemID idValue="{{acc6bd69-4115-45a6-9272-ca97ee4da586}}" />
+      <Properties>
+        <ItemName>GPC_TUYENQL13_P10</ItemName>
+        <Images>
+          <Image cx="64" cy="64" src="GPC.png" />
+        </Images>
+        <ToolTip>Version: 1.0 (Gốc P10)</ToolTip>
+        <Help>
+          <HelpFile />
+          <HelpCommand />
+          <HelpData />
+        </Help>
+      </Properties>
+      <Source />
+      <StockToolRef idValue="{{7F55AAC0-0256-48D7-BFA5-914702663FDE}}" />
+      <Data>
+        <AeccDbSubassembly>
+          <GeometryGenerateMode>UseDotNet</GeometryGenerateMode>
+          <DotNetClass Assembly="{guid}.xaml">Subassembly.GPC_TUYENQL13_P10</DotNetClass>
+          <Version>1.0</Version>
+          <Params>
+            <B_bv DataType="double" TypeInfo="16" DisplayName="bề rộng bó nền" Description="B_bv">0.15</B_bv>
+            <H_bv_tren DataType="double" TypeInfo="16" DisplayName="chiều cao bó nền" Description="H_bv_tren">0.1</H_bv_tren>
+            <H_btl DataType="double" TypeInfo="16" DisplayName="chiều cao btl" Description="H_btl">0.06</H_btl>
+            <H_bv_duoi DataType="double" TypeInfo="16" DisplayName="H_bv_duoi" Description="H_bv_duoi">0.1</H_bv_duoi>
+            <H_vat1 DataType="double" TypeInfo="16" DisplayName="chiều cao đoạn vát 1" Description="H_vat1">0.02</H_vat1>
+            <H_vat2 DataType="double" TypeInfo="16" DisplayName="chiều cao đoạn vát 2" Description="H_vat2">0.18</H_vat2>
+            <B_vat1 DataType="double" TypeInfo="16" DisplayName="chiều rộng đoạn vát 1" Description="B_vat1">0.02</B_vat1>
+            <B_vat2 DataType="double" TypeInfo="16" DisplayName="chiều rộng đoạn vát 1" Description="B_vat2">0.03</B_vat2>
+            <H_DINH DataType="double" TypeInfo="16" DisplayName="CHIỀU CAO TỪ LỚP CỎ TỚI ĐỈNH GPC" Description="H_DINH">0.05</H_DINH>
+          </Params>
+        </AeccDbSubassembly>
+        <Units>m</Units>
+      </Data>
+    </Tool>
+  </Tools>
+</Category>"""
+
+        cfg_content = """<?xml version="1.0"?>
+<Configuration xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CreatedWith>
+    <ProductName>Autodesk Subassembly Composer</ProductName>
+    <Version>ForVail</Version>
+    <VersionNumber>13.8.1809.0</VersionNumber>
+  </CreatedWith>
+</Configuration>"""
+
+        pvd_content = """<?xml version="1.0"?>
+<PreviewData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Superelevation>
+    <CrossSlopes>
+      <PreviewCrossSlope CrossSegmentType="LeftInsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftInsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftOutsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftOutsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightInsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightInsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightOutsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightOutsideShoulder" Slope="-0.05" IsDefined="true" />
+    </CrossSlopes>
+  </Superelevation>
+  <Cant>
+    <CantParams>
+      <PreviewCantParam Name="CantPivotType" Value="CenterLine" />
+      <PreviewCantParam Name="LeftRail" Value="" />
+      <PreviewCantParam Name="LeftRailDeltaElevation" Value="0" />
+      <PreviewCantParam Name="RightRail" Value="" />
+      <PreviewCantParam Name="RightRailDeltaElevation" Value="0" />
+    </CantParams>
+  </Cant>
+</PreviewData>"""
+
+        emd_content = """<?xml version="1.0"?>
+<EnumData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EnumDatas>
+    <Groups />
+    <DefinedVariables />
+  </EnumDatas>
+</EnumData>"""
+
+        cdmd_content = """<?xml version="1.0"?>
+<CodeData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CodeItems />
+</CodeData>"""
+
+        content_types = """<?xml version="1.0" encoding="utf-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="atc" ContentType="application/vnd.autodesk.c3d.sac.atc+xml" />
+  <Default Extension="cfg" ContentType="application/vnd.autodesk.c3d.sac.cfg+xml" />
+  <Default Extension="xaml" ContentType="application/vnd.autodesk.c3d.sac.xaml+xml" />
+  <Default Extension="pvd" ContentType="application/vnd.autodesk.c3d.sac.pvd+xml" />
+  <Default Extension="emd" ContentType="application/vnd.autodesk.c3d.sac.emd+xml" />
+  <Default Extension="cdmd" ContentType="application/vnd.autodesk.c3d.sac.cdmd+xml" />
+  <Default Extension="png" ContentType="image/png" />
+</Types>"""
+
+        from scripts.build_gpc_p10 import generate_xaml_goc_p10
+        xaml_text = generate_xaml_goc_p10()
+        xaml_bytes = '\ufeff'.encode('utf-8') + xaml_text.encode('utf-8')
+
+        with zipfile.ZipFile(out_p, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr('[Content_Types].xml', content_types.encode('utf-8'))
+            zf.writestr(f'{guid}.atc', atc_content.encode('utf-8'))
+            zf.writestr(f'{guid}.cfg', cfg_content.encode('utf-8'))
+            zf.writestr(f'{guid}.pvd', pvd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.emd', emd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.cdmd', cdmd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.xaml', xaml_bytes)
+            if png_bytes:
+                zf.writestr('GPC.png', png_bytes)
+
+        return out_p
