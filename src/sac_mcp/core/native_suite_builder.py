@@ -745,3 +745,142 @@ class NativeSuiteBuilder:
                 zf.writestr('GPC.png', png_bytes)
 
         return out_p
+
+    @classmethod
+    def build_11_bv_ql13_phai_goc_p4(cls, output_path: str | Path, version: str = "2026") -> Path:
+        """Cấu kiện 11: Bó vỉa QL13 Phải với điểm gốc tại P4 (Đỉnh phải bó vỉa)."""
+        import zipfile
+        out_p = Path(output_path).resolve()
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        guid = "5a260dc49c32440a9be218a2a260aebe"
+
+        tpl_dir = Path(__file__).resolve().parent.parent / "templates"
+        png_path = tpl_dir / "BV_QL13.png"
+        png_bytes = png_path.read_bytes() if png_path.exists() else b""
+
+        atc_content = f"""<?xml version="1.0"?>
+<Category xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ItemID idValue="{{33e40700-ad67-4601-887f-4ae464d55fcd}}" />
+  <Properties>
+    <ItemName>Category1</ItemName>
+    <Images>
+      <Image cx="93" cy="123" />
+    </Images>
+  </Properties>
+  <CustomData />
+  <Source />
+  <Palettes />
+  <Packages />
+  <Tools>
+    <Tool Name="BOVIA_TL13_PHAI_P4">
+      <ItemID idValue="{{2f799f36-9f95-4603-93dd-6d0f82ec54eb}}" />
+      <Properties>
+        <ItemName>BOVIA_TL13_PHAI_P4</ItemName>
+        <Images>
+          <Image cx="64" cy="64" src="Untitled.png" />
+        </Images>
+        <ToolTip>Version: 1.0 (Gốc P4)</ToolTip>
+        <Help>
+          <HelpFile />
+          <HelpCommand />
+          <HelpData />
+        </Help>
+      </Properties>
+      <Source />
+      <StockToolRef idValue="{{7F55AAC0-0256-48D7-BFA5-914702663FDE}}" />
+      <Data>
+        <AeccDbSubassembly>
+          <GeometryGenerateMode>UseDotNet</GeometryGenerateMode>
+          <DotNetClass Assembly="{guid}.xaml">Subassembly.BOVIA_TL13_PHAI_P4</DotNetClass>
+          <Version>1.0</Version>
+          <Params>
+            <H_TREN DataType="double" TypeInfo="16" DisplayName="H_TREN" Description="H_TREN">0.03</H_TREN>
+            <H_DUOI DataType="double" TypeInfo="16" DisplayName="H_DUOI" Description="H_DUOI">0.14</H_DUOI>
+            <H_XIEN DataType="double" TypeInfo="16" DisplayName="H_XIEN" Description="H_XIEN">0.12</H_XIEN>
+            <H_BTL DataType="double" TypeInfo="16" DisplayName="H_BTL" Description="H_BTL">0.06</H_BTL>
+            <B_TR DataType="double" TypeInfo="16" DisplayName="B_TR" Description="B_TR">0.05</B_TR>
+            <B_PH DataType="double" TypeInfo="16" DisplayName="B_PH" Description="B_PH">0.3</B_PH>
+            <B_RV DataType="double" TypeInfo="16" DisplayName="B_RV" Description="B_RV">0.25</B_RV>
+          </Params>
+        </AeccDbSubassembly>
+        <Units>m</Units>
+      </Data>
+    </Tool>
+  </Tools>
+  <StockTools />
+</Category>"""
+
+        cfg_content = """<?xml version="1.0"?>
+<Configuration xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CreatedWith>
+    <ProductName>Autodesk Subassembly Composer</ProductName>
+    <Version>ForVail</Version>
+    <VersionNumber>13.8.1809.0</VersionNumber>
+  </CreatedWith>
+</Configuration>"""
+
+        pvd_content = """<?xml version="1.0"?>
+<PreviewData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Superelevation>
+    <CrossSlopes>
+      <PreviewCrossSlope CrossSegmentType="LeftInsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftInsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftOutsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="LeftOutsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightInsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightInsideShoulder" Slope="-0.05" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightOutsideLane" Slope="-0.02" IsDefined="true" />
+      <PreviewCrossSlope CrossSegmentType="RightOutsideShoulder" Slope="-0.05" IsDefined="true" />
+    </CrossSlopes>
+  </Superelevation>
+  <Cant>
+    <CantParams>
+      <PreviewCantParam Name="CantPivotType" Value="CenterLine" />
+      <PreviewCantParam Name="LeftRail" Value="" />
+      <PreviewCantParam Name="LeftRailDeltaElevation" Value="0" />
+      <PreviewCantParam Name="RightRail" Value="" />
+      <PreviewCantParam Name="RightRailDeltaElevation" Value="0" />
+    </CantParams>
+  </Cant>
+</PreviewData>"""
+
+        emd_content = """<?xml version="1.0"?>
+<EnumData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EnumDatas>
+    <Groups />
+    <DefinedVariables />
+  </EnumDatas>
+</EnumData>"""
+
+        cdmd_content = """<?xml version="1.0"?>
+<CodeData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CodeItems />
+</CodeData>"""
+
+        content_types = """<?xml version="1.0" encoding="utf-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="atc" ContentType="application/vnd.autodesk.c3d.sac.atc+xml" />
+  <Default Extension="cfg" ContentType="application/vnd.autodesk.c3d.sac.cfg+xml" />
+  <Default Extension="xaml" ContentType="application/vnd.autodesk.c3d.sac.xaml+xml" />
+  <Default Extension="pvd" ContentType="application/vnd.autodesk.c3d.sac.pvd+xml" />
+  <Default Extension="emd" ContentType="application/vnd.autodesk.c3d.sac.emd+xml" />
+  <Default Extension="cdmd" ContentType="application/vnd.autodesk.c3d.sac.cdmd+xml" />
+  <Default Extension="png" ContentType="image/png" />
+</Types>"""
+
+        from scripts.build_bv_ql13_p4 import generate_xaml_bv_goc_p4
+        xaml_text = generate_xaml_bv_goc_p4()
+        xaml_bytes = '\ufeff'.encode('utf-8') + xaml_text.encode('utf-8')
+
+        with zipfile.ZipFile(out_p, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr('[Content_Types].xml', content_types.encode('utf-8'))
+            zf.writestr(f'{guid}.atc', atc_content.encode('utf-8'))
+            zf.writestr(f'{guid}.cfg', cfg_content.encode('utf-8'))
+            zf.writestr(f'{guid}.pvd', pvd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.emd', emd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.cdmd', cdmd_content.encode('utf-8'))
+            zf.writestr(f'{guid}.xaml', xaml_bytes)
+            if png_bytes:
+                zf.writestr('Untitled.png', png_bytes)
+
+        return out_p
