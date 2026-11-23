@@ -43,3 +43,13 @@ add_point_and_link(pkt_path, point_code, from_point="Origin",
 - `add_intersection_point(point_code, link1, link2, is_auxiliary=False, point_codes_str="", parent_node_id=None)`.
 - `add_strip_surface(display_name, depth_expr, end_point_name, end_offset=-5.0, end_offset_target=None, link_codes_str="Link_VHC", parent_node_id=None, surface_target="EG", start_point_name=None, start_offset=None, link_number=None)`.
 - `remove_node`, `update_node`, `export_spec`, `build_from_spec`: xem docstring và `docs/spec_format.md`.
+
+## 5 tool cộng tác huấn luyện Skill qua nhánh Git (`skill/*`)
+
+| Tool | Chữ ký | Chức năng |
+| :--- | :--- | :--- |
+| `skill_start_branch` | `branch_name, author="", base_branch=""` | Tạo / chuyển sang nhánh Git `skill/<slug>` và đồng bộ skill. |
+| `skill_learn_pkt` | `pkt_path, title, author="", notes="", category="pattern", slug=""` | Kiểm định 3 tầng file `.pkt`, xuất Spec JSON và sinh bài học độc lập trong `reference/contributions/<slug>.md`, cập nhật `INDEX.md` và đồng bộ `.agents/skills/`. |
+| `skill_add_note` | `title, content, author="", category="rule", slug=""` | Thêm bài học quy tắc / công thức VB / xử lý lỗi vào `reference/contributions/<slug>.md` và đồng bộ `.agents/skills/`. |
+| `skill_submit_branch` | `message="", push=True` | Kiểm định toàn bộ bài học đóng góp, commit và `git push -u origin <branch>` kèm link tạo Pull Request. |
+| `skill_list_branches` | `fetch=False` | Liệt kê tất cả nhánh huấn luyện `skill/*` và danh sách bài học đã đóng góp. |

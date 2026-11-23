@@ -167,3 +167,123 @@ def register(mcp: Any, mutate_pkt: Callable[..., str], safe_tool: Callable[[str]
             backup_path=res.get("backup_path"),
         )
         return json.dumps(out.model_dump(), ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    @safe_tool("skill_start_branch")
+    def skill_start_branch(
+        branch_name: str,
+        author: str = "",
+        base_branch: str = "",
+    ) -> str:
+        """
+        Tạo hoặc chuyển sang nhánh Git huấn luyện Skill cộng tác (dạng `skill/<ten-nhanh>`).
+        Dùng khi thành viên mới bắt đầu một phiên dạy / đóng góp mẫu cấu kiện hoặc quy tắc mới vào Skill.
+
+        Args:
+            branch_name: Tên nhánh huấn luyện (VD: 'minh-cong-hop' -> tự chuẩn hóa thành 'skill/minh-cong-hop').
+            author: (Tùy chọn) Tên người huấn luyện / đóng góp.
+            base_branch: (Tùy chọn) Nhánh gốc để rẽ nhánh.
+        """
+        from sac_mcp.core import skill_trainer as _st
+
+        info = _st.start_training_branch(branch_name=branch_name, author=author, base_branch=base_branch)
+        return json.dumps({"success": True, "action": "skill_start_branch", **info}, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    @safe_tool("skill_learn_pkt")
+    def skill_learn_pkt(
+        pkt_path: str,
+        title: str,
+        author: str = "",
+        notes: str = "",
+        category: str = "pattern",
+        slug: str = "",
+    ) -> str:
+        """
+        Huấn luyện một file `.pkt` chuẩn vào Skill `sac-subassembly-design`:
+        1. Kiểm định 3 tầng file `.pkt` (chặn nếu file lỗi).
+        2. Trích xuất Spec JSON (`export_spec`) và lưu bản mẫu vào `examples/skill_contributions/<slug>/`.
+        3. Sinh bài học markdown độc lập tại `.claude/skills/sac-subassembly-design/reference/contributions/<slug>.md`
+           (mỗi bài học 1 file riêng để nhiều người đẩy nhiều nhánh không bị xung đột Git).
+        4. Cập nhật `INDEX.md` và tự động đồng bộ sang `.agents/skills/`.
+
+        Args:
+            pkt_path: Đường dẫn tới file .pkt mẫu đã dựng hoặc mở sẵn.
+            title: Tiêu đề bài học / mẫu cấu kiện (VD: 'Cống hộp đôi BTCT có đệm đá dăm').
+            author: (Tùy chọn) Tên thành viên đóng góp.
+            notes: (Tùy chọn) Ghi chú kinh nghiệm thiết kế, quy ước mã code hoặc lưu ý cho AI.
+            category: Phân loại mẫu ('pattern', 'drainage', 'wall', 'pavement', 'curb', 'slope').
+            slug: (Tùy chọn) Định danh file kebab-case (tự sinh từ title nếu bỏ trống).
+        """
+        from sac_mcp.core import skill_trainer as _st
+
+        run_native = os.environ.get("SAC_MCP_NATIVE_ON_SAVE", "1") != "0"
+        info = _st.learn_from_pkt(
+            pkt_path=pkt_path,
+            title=title,
+            author=author,
+            notes=notes,
+            category=category,
+            slug=slug,
+            run_native_test=run_native,
+        )
+        return json.dumps({"success": True, "action": "skill_learn_pkt", **info}, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    @safe_tool("skill_add_note")
+    def skill_add_note(
+        title: str,
+        content: str,
+        author: str = "",
+        category: str = "rule",
+        slug: str = "",
+    ) -> str:
+        """
+        Đóng góp bài học lý thuyết, công thức VB, quy ước đặt tên hoặc cách xử lý lỗi vào Skill
+        mà không cần file .pkt, tự động cập nhật `INDEX.md` và đồng bộ `.claude/skills` <-> `.agents/skills`.
+
+        Args:
+            title: Tiêu đề quy tắc / bài học.
+            content: Nội dung chi tiết (Markdown) hướng dẫn AI.
+            author: (Tùy chọn) Tên người đóng góp.
+            category: Phân loại ('rule', 'formula', 'troubleshooting').
+            slug: (Tùy chọn) Định danh file kebab-case.
+        """
+        from sac_mcp.core import skill_trainer as _st
+
+        info = _st.add_skill_note(title=title, content=content, author=author, category=category, slug=slug)
+        return json.dumps({"success": True, "action": "skill_add_note", **info}, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    @safe_tool("skill_submit_branch")
+    def skill_submit_branch(
+        message: str = "",
+        push: bool = True,
+    ) -> str:
+        """
+        Kiểm định toàn bộ bài học đóng góp, đồng bộ `.claude/skills` <-> `.agents/skills`,
+        git commit và `git push -u origin <nhánh>` lên GitHub kèm đường dẫn tạo Pull Request.
+
+        Args:
+            message: Nội dung commit message mô tả bài học vừa huấn luyện.
+            push: True (mặc định) để đẩy nhánh lên GitHub (`origin`); False nếu chỉ muốn commit cục bộ.
+        """
+        from sac_mcp.core import skill_trainer as _st
+
+        run_native = os.environ.get("SAC_MCP_NATIVE_ON_SAVE", "1") != "0"
+        info = _st.submit_training_branch(message=message, push=push, run_native_test=run_native)
+        return json.dumps({"success": True, "action": "skill_submit_branch", **info}, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    @safe_tool("skill_list_branches")
+    def skill_list_branches(fetch: bool = False) -> str:
+        """
+        Liệt kê các nhánh huấn luyện Skill (`skill/*`, `train/*`) của cả nhóm và danh mục bài học đã đóng góp.
+
+        Args:
+            fetch: True để gọi `git fetch origin` cập nhật danh sách nhánh từ GitHub trước khi liệt kê.
+        """
+        from sac_mcp.core import skill_trainer as _st
+
+        info = _st.list_training_branches(fetch=fetch)
+        return json.dumps({"success": True, "action": "skill_list_branches", **info}, ensure_ascii=False, indent=2)

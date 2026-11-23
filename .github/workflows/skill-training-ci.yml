@@ -1,0 +1,43 @@
+name: Skill Training & PKT Validation CI
+
+on:
+  push:
+    branches:
+      - "skill/**"
+      - "train/**"
+      - "Civil3D"
+      - "master"
+  pull_request:
+    branches:
+      - "Civil3D"
+      - "master"
+
+jobs:
+  validate-skill-contribution:
+    name: Kiểm định nhánh huấn luyện Skill & Đồng bộ Agent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Check .claude/skills <-> .agents/skills mirror
+        run: |
+          python scripts/sync_agent_skills.py --check
+
+      - name: Validate contributed PKT files & Skill integrity (Tier 1 & Tier 2)
+        run: |
+          python -m sac_mcp.cli skill check --no-native
+
+      - name: Run Skill & Spec tests
+        run: |
+          pytest tests/test_skill_mirror.py tests/test_skill_trainer.py -v

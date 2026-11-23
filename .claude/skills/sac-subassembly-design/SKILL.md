@@ -10,6 +10,7 @@ Skill này hướng dẫn dựng một Subassembly SAC **từ bản vẽ mặt c
 
 Tài liệu tham khảo (chỉ mở khi cần):
 - [reference/patterns.md](reference/patterns.md): 6 mẫu dựng hình dạng chuỗi lời gọi tool (làn siêu cao, bó vỉa bo cong, taluy đào/đắp có Decision, giật cơ bằng Loop, tường chắn 3 Shape, áo đường nhiều lớp).
+- [reference/contributions/INDEX.md](reference/contributions/INDEX.md): Kho bài học & mẫu cấu kiện cộng đồng đóng góp qua nhánh Git (`skill/*`).
 - [reference/naming_and_types.md](reference/naming_and_types.md): quy ước đặt tên H_/B_/i_, bảng kiểu dữ liệu Parameter, mã Point/Link/Shape.
 - [reference/validation_playbook.md](reference/validation_playbook.md): đọc kết quả kiểm định và sửa từng loại lỗi, kèm thông điệp lỗi thật.
 - [reference/tools.md](reference/tools.md): chữ ký tóm tắt của mọi tool, đặc biệt 8 tool activity bổ sung và quy tắc `link_name` của `add_point_and_link`.
@@ -19,6 +20,7 @@ Tài liệu tham khảo (chỉ mở khi cần):
 - Người dùng gửi bản vẽ / mô tả mặt cắt ngang và muốn có subassembly cho Civil 3D 2025 / 2026 / 2027.
 - Sửa, bổ sung, gỡ lỗi một file `.pkt` có sẵn (kể cả file 2024 – chỉ đọc / kiểm định).
 - Kiểm tra vì sao SAC không mở được file hoặc Preview báo lỗi.
+- Thành viên nhóm muốn huấn luyện thêm mẫu `.pkt` hoặc kinh nghiệm thiết kế mới vào Skill trên nhánh Git riêng (`skill/<ten-nhanh>`).
 
 ## Bộ tool
 
@@ -30,6 +32,7 @@ Tài liệu tham khảo (chỉ mở khi cần):
 | Hình học | `add_point_and_link`, `add_link`, `add_shape`, `add_fillet_arc`, `add_curve`, `add_offset_geometry`, `add_intersection_point`, `add_loop_geometry`, `add_strip_surface`, `add_get_mark_point`, `add_set_mark_point` |
 | Luồng | `add_flow_decision`, `add_report_message` |
 | Sửa / xoá | `update_node`, `remove_node` |
+| Huấn luyện Skill (Git Branch) | `skill_start_branch`, `skill_learn_pkt`, `skill_add_note`, `skill_submit_branch`, `skill_list_branches` |
 
 Chữ ký tóm tắt: [reference/tools.md](reference/tools.md); **docstring của tool là nguồn chuẩn**.
 `build_from_spec` / `export_spec` dùng spec JSON khai báo, định dạng mô tả trong `docs/spec_format.md`.

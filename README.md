@@ -219,3 +219,35 @@ nên cả ba công cụ đều đọc được. Mỗi công cụ quét một th�
 - Antigravity App (bản desktop, khác IDE / CLI) chưa ghi rõ có đọc cấu hình MCP cấp workspace không;
   nếu không thấy tool, thêm mục `sac` giống `.agents/mcp_config.json` vào cấu hình MCP toàn cục của App.
 - OpenCode thấy skill ở cả hai thư mục với cùng tên; nội dung giống hệt nên dùng bản nào cũng như nhau.
+
+---
+
+## 7. Cộng Tác Huấn Luyện Skill Qua Nhánh Git (`skill/*`)
+
+Dự án tích hợp sẵn bộ công cụ `sac-cli skill` (và 5 MCP tools tương ứng) giúp nhiều thành viên cùng tham gia dạy thêm mẫu `.pkt` hoặc quy tắc mới vào Skill `sac-subassembly-design` trên các nhánh Git riêng mà **không bị xung đột (`Zero Merge Conflict`)**. Xem hướng dẫn đầy đủ tại [CONTRIBUTING_SKILL.md](CONTRIBUTING_SKILL.md).
+
+### Các lệnh CLI dành cho thành viên & quản trị viên:
+
+```powershell
+# 1. Tự động cấu hình đường dẫn MCP (.agents/mcp_config.json, opencode.json) cho máy mới clone repo
+.\sac-cli.bat skill setup --global-skill
+
+# 2. Tạo và chuyển sang nhánh huấn luyện riêng (tự chuẩn hóa thành skill/<ten-nhanh>)
+.\sac-cli.bat skill branch minh-tuong-chan --author "Minh"
+
+# 3a. Huấn luyện một file .pkt chuẩn vào Skill (kiểm định 3 tầng -> trích Spec JSON -> sinh bài học .md -> đồng bộ .agents)
+.\sac-cli.bat skill learn "C:\Path\To\CauKien.pkt" --title "Tường chắn BTCT mở rộng đáy" --author "Minh" --notes "Gốc tại P1"
+
+# 3b. Hoặc thêm bài học quy tắc / công thức VB / cách gỡ lỗi
+.\sac-cli.bat skill note --title "Quy tắc đặt điểm gốc bó vỉa" --content "Đặt Origin tại P4 hoặc P10..." --author "Minh"
+
+# 4. Kiểm tra đồng bộ .claude <-> .agents và kiểm định toàn bộ file .pkt đóng góp
+.\sac-cli.bat skill check
+
+# 5. Commit và đẩy nhánh huấn luyện lên GitHub (in sẵn link tạo Pull Request)
+.\sac-cli.bat skill push -m "Huấn luyện mẫu tường chắn BTCT"
+
+# 6. (Quản trị viên) Xem danh sách nhánh huấn luyện và gộp nhánh của thành viên
+.\sac-cli.bat skill branches --fetch
+.\sac-cli.bat skill merge skill/minh-tuong-chan
+```

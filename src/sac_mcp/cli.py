@@ -96,10 +96,137 @@ def cmd_test(args: argparse.Namespace) -> int:
     return res.returncode
 
 
+def cmd_skill(args: argparse.Namespace) -> int:
+    from sac_mcp.core import skill_trainer as st
+
+    action = args.skill_action
+    try:
+        if action == "setup":
+            info = st.setup_workspace(ROOT_DIR, sync_global=args.global_skill)
+            print("✅ Đã cấu hình đường dẫn MCP và đồng bộ Skill cho máy hiện tại:")
+            print(f"  - Python       : {info['python_command']}")
+            print(f"  - Antigravity  : {info['agents_mcp_config']}")
+            print(f"  - OpenCode     : {info['opencode_config']}")
+            print(f"  - Skill Synced : {info['skill_sync']['files_synced']} files (.claude/skills -> .agents/skills)")
+            if info["skill_sync"]["global_skill_synced"]:
+                print(f"  - Global Skill : {info['skill_sync']['global_skill_synced']}")
+            return 0
+
+        if action == "branch":
+            info = st.start_training_branch(
+                branch_name=args.name,
+                author=args.author or "",
+                base_branch=args.base or "",
+                root_dir=ROOT_DIR,
+            )
+            verb = "Tạo mới & chuyển sang" if info["action"] == "created_new" else "Chuyển sang"
+            print(f"🌿 {verb} nhánh huấn luyện: {info['branch']}")
+            for step in info["next_steps"]:
+                print(f"   {step}")
+            return 0
+
+        if action == "learn":
+            info = st.learn_from_pkt(
+                pkt_path=args.pkt,
+                title=args.title,
+                author=args.author or "",
+                notes=args.notes or "",
+                category=args.category,
+                slug=args.slug or "",
+                run_native_test=not args.no_native,
+                root_dir=ROOT_DIR,
+            )
+            print(f"🎓 Đã huấn luyện thành công cấu kiện '{info['subassembly_name']}' vào Skill!")
+            print(f"  - Slug bài học : {info['slug']}")
+            print(f"  - Nhánh Git    : {info['branch']}")
+            print(f"  - File bài học : {info['lesson_markdown']}")
+            print(f"  - File mẫu PKT : {info['saved_pkt']}")
+            print(f"  - Spec JSON    : {info['saved_spec']}")
+            print(f"  - Đồng bộ      : {info['skill_sync']['files_synced']} files (.claude <-> .agents)")
+            return 0
+
+        if action == "note":
+            info = st.add_skill_note(
+                title=args.title,
+                content=args.content,
+                author=args.author or "",
+                category=args.category,
+                slug=args.slug or "",
+                root_dir=ROOT_DIR,
+            )
+            print(f"📝 Đã thêm bài học/ghi chú '{info['title']}' ({info['slug']}) vào Skill!")
+            print(f"  - File bài học : {info['lesson_markdown']}")
+            print(f"  - Đồng bộ      : {info['skill_sync']['files_synced']} files (.claude <-> .agents)")
+            return 0
+
+        if action == "check":
+            info = st.check_skill_training(ROOT_DIR, run_native_test=not args.no_native)
+            if info["is_valid"]:
+                print(
+                    f"✅ KIỂM ĐỊNH SKILL ĐẠT 100%! "
+                    f"(Mirror OK, Frontmatter OK, {info['contributions_pkt_checked']} file .pkt đóng góp đạt chuẩn)"
+                )
+                return 0
+            print(f"❌ PHÁT HIỆN {len(info['issues'])} LỖI KIỂM ĐỊNH SKILL:")
+            for iss in info["issues"]:
+                print(f"  - {iss}")
+            return 1
+
+        if action == "push":
+            info = st.submit_training_branch(
+                message=args.message or "",
+                push=not args.no_push,
+                root_dir=ROOT_DIR,
+                run_native_test=not args.no_native,
+            )
+            print(f"🚀 Đã đóng gói nhánh huấn luyện '{info['branch']}':")
+            print(f"  - Commit : {info['commit_message']}")
+            print(f"  - Pushed : {'Thành công lên origin' if info['pushed'] else 'Chỉ commit cục bộ (--no-push)'}")
+            if info["pull_request_url"]:
+                print(f"  - Tạo PR : {info['pull_request_url']}")
+            return 0
+
+        if action == "branches":
+            info = st.list_training_branches(ROOT_DIR, fetch=args.fetch)
+            print(f"🌿 Nhánh hiện tại: {info['current_branch']}")
+            print(f"\n📌 Các nhánh huấn luyện ({len(info['training_branches'])}):")
+            if info["training_branches"]:
+                for b in info["training_branches"]:
+                    print(f"  - {b['branch']:35s} | {b['date']} | {b['author']:18s} | {b['subject']}")
+            else:
+                print("  (Chưa có nhánh skill/* nào)")
+            print(f"\n📚 Các bài học đã đóng góp ({len(info['contributed_lessons'])}):")
+            if info["contributed_lessons"]:
+                for ls in info["contributed_lessons"]:
+                    print(f"  - [{ls['slug']}] {ls['title']} (bởi {ls['author']}, nhánh {ls['branch']})")
+            else:
+                print("  (Chưa có bài học đóng góp nào)")
+            return 0
+
+        if action == "merge":
+            info = st.merge_training_branch(
+                branch_name=args.name,
+                root_dir=ROOT_DIR,
+                run_native_test=not args.no_native,
+            )
+            print(f"🔀 Đã gộp nhánh '{info['merged_branch']}' vào '{info['into_branch']}' và đồng bộ Skill!")
+            if not info["validation"]["is_valid"]:
+                print("⚠️ Cảnh báo hậu kiểm:")
+                for iss in info["validation"]["issues"]:
+                    print(f"  - {iss}")
+                return 1
+            return 0
+
+    except Exception as exc:
+        print(f"❌ Lỗi: {exc}")
+        return 1
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="sac-cli",
-        description="Bộ công cụ tự động hóa & kiểm định Autodesk Civil 3D Subassembly Composer (.pkt)",
+        description="Bộ công cụ tự động hóa, huấn luyện Skill cộng tác & kiểm định Autodesk Civil 3D Subassembly Composer (.pkt)",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -121,6 +248,51 @@ def main() -> None:
     # Lệnh test
     p_test = subparsers.add_parser("test", help="Chạy toàn bộ pytest suite")
     p_test.set_defaults(func=cmd_test)
+
+    # Lệnh skill (cộng tác huấn luyện skill qua nhánh Git)
+    p_skill = subparsers.add_parser("skill", help="Huấn luyện Skill cộng tác qua nhánh Git (branch, learn, note, check, push, merge)")
+    skill_sub = p_skill.add_subparsers(dest="skill_action", required=True)
+
+    p_setup = skill_sub.add_parser("setup", help="Cấu hình đường dẫn MCP và đồng bộ skill cho máy vừa clone repo")
+    p_setup.add_argument("--global-skill", action="store_true", help="Đồng bộ luôn vào ~/.gemini/config/skills/")
+
+    p_branch = skill_sub.add_parser("branch", help="Tạo hoặc chuyển sang nhánh huấn luyện skill/<ten-nhanh>")
+    p_branch.add_argument("name", help="Tên nhánh (VD: minh-cong-hop hoặc skill/minh-cong-hop)")
+    p_branch.add_argument("--author", help="Tên người huấn luyện")
+    p_branch.add_argument("--base", help="Nhánh gốc để rẽ nhánh (tùy chọn)")
+
+    p_learn = skill_sub.add_parser("learn", help="Huấn luyện 1 file .pkt chuẩn vào kho bài học của Skill")
+    p_learn.add_argument("pkt", help="Đường dẫn tới file .pkt mẫu cần học")
+    p_learn.add_argument("--title", required=True, help="Tiêu đề bài học / mẫu cấu kiện")
+    p_learn.add_argument("--author", help="Tên người đóng góp")
+    p_learn.add_argument("--notes", help="Ghi chú thiết kế / lưu ý đặc biệt cho AI")
+    p_learn.add_argument("--category", default="pattern", help="Phân loại (pattern, drainage, wall, pavement...)")
+    p_learn.add_argument("--slug", help="Mã định danh bài học (tự sinh từ title nếu bỏ trống)")
+    p_learn.add_argument("--no-native", action="store_true", help="Bỏ qua kiểm định Tầng 3 khi máy chưa cài SAC")
+
+    p_note = skill_sub.add_parser("note", help="Thêm bài học quy tắc / công thức VB / kinh nghiệm gỡ lỗi vào Skill")
+    p_note.add_argument("--title", required=True, help="Tiêu đề quy tắc / kinh nghiệm")
+    p_note.add_argument("--content", required=True, help="Nội dung hướng dẫn chi tiết cho AI")
+    p_note.add_argument("--author", help="Tên người đóng góp")
+    p_note.add_argument("--category", default="rule", help="Phân loại (rule, formula, troubleshooting...)")
+    p_note.add_argument("--slug", help="Mã định danh bài học")
+
+    p_check = skill_sub.add_parser("check", help="Kiểm tra đồng bộ .claude <-> .agents và kiểm định toàn bộ .pkt đóng góp")
+    p_check.add_argument("--no-native", action="store_true", help="Bỏ qua Tầng 3 khi máy chưa cài SAC")
+
+    p_push = skill_sub.add_parser("push", help="Kiểm định, commit và đẩy nhánh huấn luyện lên GitHub")
+    p_push.add_argument("-m", "--message", help="Nội dung commit message")
+    p_push.add_argument("--no-push", action="store_true", help="Chỉ commit cục bộ, không chạy git push")
+    p_push.add_argument("--no-native", action="store_true", help="Bỏ qua Tầng 3 khi máy chưa cài SAC")
+
+    p_branches = skill_sub.add_parser("branches", help="Liệt kê các nhánh huấn luyện skill/* và bài học đã đóng góp")
+    p_branches.add_argument("--fetch", action="store_true", help="Fetch danh sách nhánh mới nhất từ origin trước khi liệt kê")
+
+    p_merge = skill_sub.add_parser("merge", help="Gộp nhánh huấn luyện của thành viên và đồng bộ lại toàn bộ Skill")
+    p_merge.add_argument("name", help="Tên nhánh cần gộp (VD: skill/minh-cong-hop)")
+    p_merge.add_argument("--no-native", action="store_true", help="Bỏ qua Tầng 3 khi máy chưa cài SAC")
+
+    p_skill.set_defaults(func=cmd_skill)
 
     args = parser.parse_args()
     sys.exit(args.func(args))
