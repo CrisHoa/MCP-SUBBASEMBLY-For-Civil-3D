@@ -33,38 +33,6 @@ Tier 1 (OPC & XML): Verifies all 6 GUID-named files (.atc, .cfg, .xaml, .pvd, .e
 # 4. (Maintainers) List and merge contributor branches
 .\sac-cli.bat skill branches --fetch
 .\sac-cli.bat skill merge skill/minh-retaining-wall
-SAC MCP Server & Toolchain (sac-mcp-server)MCP Server & CLI Toolchain chuyên biệt để đọc, thiết kế, kiểm định và tự động tạo file Subassembly (.pkt) cho Autodesk Civil 3D Subassembly Composer.Tạo / sửa: Civil 3D 2025, 2026, 2027.Đọc / kiểm định: Hỗ trợ thêm Civil 3D 2024.1. Cài Đặt NhanhPowerShell# 1. Clone repo
-git clone https://github.com/CrisHoa/MCP-SUBBASEMBLY-For-Civil-3D.git
-cd "MCP-SUBBASEMBLY-For-Civil-3D"
-
-# 2. Cài môi trường Python & tự cấu hình đường dẫn MCP + Skill
-python -m venv .venv
-.\.venv\Scripts\pip install -e ".[dev]"
-.\sac-cli.bat skill setup --global-skill
-2. Công Cụ CLI (sac-cli.bat)PowerShell# Kiểm định 3 tầng một file .pkt (thêm --doc để mở bằng SubassemblyDocument, --no-native để bỏ Tầng 3)
-.\sac-cli.bat validate "D:\duong\dan\file.pkt"
-
-# Dựng nhanh và tự động kiểm định
-.\sac-cli.bat build --giaco                            # Sub Gia Cố Mái Taluy
-.\sac-cli.bat build --sub7                             # Bộ 7 Subassembly chuẩn (chỉ tham số)
-.\sac-cli.bat build --all --out "D:\Xuat\SUB PHU YEN"  # Dựng tất cả ra thư mục chỉ định
-
-# Chạy kiểm thử
-.\sac-cli.bat test
-Thứ tự ưu tiên thư mục xuất: --out → biến môi trường SAC_OUTPUT_DIR → mặc định ~/Desktop/SUB PHU YEN.3. Kiểm Định 3 Tầng & Cơ Chế An ToànPlaintext[.pkt] ──> Tầng 1: OPC & XML ──> Tầng 2: XAML tĩnh & Ngữ nghĩa ──> Tầng 3: DLL gốc của SAC
-Tầng 1 (OPC & XML): Kiểm tra đủ 6 file GUID (.atc, .cfg, .xaml, .pvd, .emd, .cdmd), [Content_Types].xml và cú pháp XML.Tầng 2 (XAML tĩnh): Chạy được khi máy không cài SAC. Kiểm tra UTF-8 BOM, biểu thức VB.NET, thẻ activity, thuộc tính bắt buộc và tham chiếu Point/Link/Flowchart (semantic_checks.py).Tầng 3 (Native SAC): Chạy qua SacHost.exe (tự biên dịch lần đầu bằng csc.exe, giữ tiến trình nền ~10 ms/file). Tự chọn đúng bản SAC theo .cfg (ghi đè qua SAC_INSTALL_DIR) để biên dịch biểu thức VB và bắt lỗi biến/kiểu dữ liệu.Sửa file an toàn: Mọi tool sửa .pkt đều ghi ra file tạm → kiểm định Tầng 1–2 → tự sao lưu .pkt.bak → thay thế nguyên tử (os.replace). Lỗi Tầng 3 khi lưu chỉ báo warnings (tắt bằng SAC_MCP_NATIVE_ON_SAVE=0).4. Bộ 27 Công Cụ MCPNhómCác công cụ chínhĐọc & Tra cứuinspect_pkt, validate_pkt_native, get_sac_reference_and_formulas, list_examples_and_split_catalogKhởi tạo & Speccreate_pkt_from_template, generate_assembly_recipe, export_spec, build_from_specHình họcadd_point_and_link, add_link, add_shape, add_fillet_arc, add_curve, add_offset_geometry, add_loop_geometry, add_intersection_point, add_strip_surface, add_get_mark_point / add_set_mark_pointTham số & Logicadd_parameter, add_define_variable / add_set_variable, add_set_output_parameter, add_flow_decision, add_report_messageChỉnh sửa luồngupdate_node (tự cập nhật tham chiếu khi đổi tên), remove_node (tự nối lại luồng)Nối node (parent_node_id): Bỏ trống để nối mọi nhánh mở hội tụ về node mới; truyền __ReferenceIDn để chèn ngay sau FlowStep; truyền __ReferenceIDn:True / :False để chèn vào nhánh FlowDecision.Tên đối tượng: Mặc định không được trùng (truyền allow_duplicate_name=True nếu dùng lại tên ở hai nhánh loại trừ nhau).5. Tích Hợp AI Coding AgentsSkill sac-subassembly-design (chuẩn Agent Skills) đi kèm quy trình thiết kế và các mẫu đã kiểm chứng (reference/patterns.md).Công cụThư mục SkillCấu hình MCP sacClaude Code.claude/skills/ (bản gốc)Cấu hình MCP của Claude CodeGoogle Antigravity.agents/skills/ (bản sao).agents/mcp_config.jsonOpenCode.claude/skills/ & .agents/skills/opencode.jsonSau khi sửa skill ở .claude/skills/, chạy .venv\Scripts\python.exe scripts\sync_agent_skills.py để đồng bộ sang .agents/skills/.6. Cộng Tác Huấn Luyện Skill (skill/*)Hỗ trợ nhiều thành viên đóng góp mẫu .pkt hoặc quy tắc mới trên nhánh Git riêng mà không xung đột (chi tiết xem CONTRIBUTING_SKILL.md):PowerShell# 1. Tạo nhánh huấn luyện riêng (tự thêm tiền tố skill/)
-.\sac-cli.bat skill branch minh-tuong-chan --author "Minh"
-
-# 2a. Học từ file .pkt chuẩn (kiểm định 3 tầng -> trích Spec -> sinh bài học -> đồng bộ)
-.\sac-cli.bat skill learn "C:\Path\To\CauKien.pkt" --title "Tường chắn BTCT" --author "Minh" --notes "Gốc tại P1"
-
-# 2b. Hoặc ghi chú quy tắc / công thức VB
-.\sac-cli.bat skill note --title "Quy tắc gốc bó vỉa" --content "Đặt Origin tại P4 hoặc P10..." --author "Minh"
-
-# 3. Kiểm tra đồng bộ & đẩy lên GitHub (tự in link tạo PR)
-.\sac-cli.bat skill check
-.\sac-cli.bat skill push -m "Huấn luyện mẫu tường chắn BTCT"
-
 # 4. (Quản trị viên) Xem và gộp nhánh
 .\sac-cli.bat skill branches --fetch
 .\sac-cli.bat skill merge skill/minh-tuong-chan
