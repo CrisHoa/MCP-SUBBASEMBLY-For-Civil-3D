@@ -1,253 +1,70 @@
-# SAC MCP Server & Toolchain (`sac-mcp-server`)
+AC MCP Server & Toolchain (sac-mcp-server)A dedicated MCP Server & CLI Toolchain for reading, designing, validating, and automatically generating Subassembly (.pkt) files for Autodesk Civil 3D Subassembly Composer.Create / Edit: Civil 3D 2025, 2026, 2027.Read / Validate: Also supports Civil 3D 2024.1. Quick StartPowerShell# 1. Clone the repository
+git clone https://github.com/CrisHoa/MCP-SUBBASEMBLY-For-Civil-3D.git
+cd "MCP-SUBBASEMBLY-For-Civil-3D"
 
-**Model Context Protocol (MCP) Server & CLI Toolchain** chuyên biệt để đọc hiểu, thiết kế, giải phẫu, kiểm định và tự động khởi tạo file **Subassembly (`.pkt`)** cho **Autodesk Civil 3D Subassembly Composer**.
-
-- Tạo / sửa file: Civil 3D **2025, 2026, 2027**.
-- Đọc / kiểm định: thêm cả file **2024**.
-
----
-
-## 1. Công Cụ CLI (`sac-cli`)
-
-Chạy qua [sac-cli.bat](sac-cli.bat) (dùng Python trong `.venv`):
-
-```powershell
-# 1. Kiểm định 3 tầng một file .pkt bất kỳ
-.\sac-cli.bat validate "D:\duong\dan\file.pkt"
-.\sac-cli.bat validate "D:\duong\dan\file.pkt" --doc         # thêm bước mở bằng SubassemblyDocument (~2 giây)
-.\sac-cli.bat validate "D:\duong\dan\file.pkt" --no-native   # bỏ qua Tầng 3
-
-# 2. Dựng nhanh riêng sub và tự động kiểm định:
-.\sac-cli.bat build --giaco
-
-# 3. Dựng nhanh Bộ Subassembly chuẩn và tự động kiểm định:
-.\sac-cli.bat build --sub7
-
-# 4. Dựng tất cả, kiểm định và xuất ra thư mục chỉ định
-.\sac-cli.bat build --all --out "D:\Xuat\SUB PHU YEN"
-
-# 5. Chạy bộ kiểm thử pytest
-.\sac-cli.bat test
-```
-
-**Thư mục xuất** của lệnh `build` được chọn theo thứ tự:
-
-1. `--out`
-2. Biến môi trường `SAC_OUTPUT_DIR`
-3. Mặc định `~/Desktop/SUB PHU YEN`
-
-> Lưu ý: `build --giaco` / `--sub7` cũng ghi lại các file mẫu tương ứng trong `examples/`.
-> `build --sub7` (`scripts/rebuild_7_subassemblies.py`) ghi vào **cùng thư mục** `Bo_7_Subassembly_Chuan/`
-> với các file do `NativeSuiteBuilder` sinh, nhưng nội dung khác (chỉ có tham số, không có hình học).
-
----
-
-## 2. Kiến Trúc Kiểm Định 3 Tầng
-
-```text
-[File .pkt] ──> Tầng 1: OPC & XML ──> Tầng 2: XAML tĩnh + ngữ nghĩa ──> Tầng 3: DLL gốc của SAC
-```
-
-1. **Tầng 1 (OPC Package & XML):**
-   - Đủ 6 file định danh GUID (`.atc`, `.cfg`, `.xaml`, `.pvd`, `.emd`, `.cdmd`) và `[Content_Types].xml`.
-   - XML hợp lệ, ký tự `&` đã được escape.
-2. **Tầng 2 (XAML tĩnh, chạy được khi máy không cài SAC):**
-   - File `.xaml` có UTF-8 BOM và không có header `<?xml...>`.
-   - Tên biến là định danh VB.NET hợp lệ; biểu thức trong `<InArgument>` được bọc `[...]`; không dùng thẻ mock `sac:`.
-   - Ngữ nghĩa ([semantic_checks.py](src/sac_mcp/core/semantic_checks.py)), dựa trên danh mục lấy từ `Subassembly.ActivityLibrary.dll`:
-
-   | Mã lỗi | Mức | Ý nghĩa |
-   | :--- | :--- | :--- |
-   | `ACTIVITY_UNKNOWN` | ERROR | Thẻ activity không tồn tại. |
-   | `ATTRIBUTE_UNKNOWN` | ERROR | Activity không có thuộc tính đó (SAC không mở được file). |
-   | `ARGUMENT_REQUIRED` | ERROR | Thiếu đối số bắt buộc (`[RequiredArgument]`). |
-   | `FLOW_REFERENCE` | ERROR | `x:Reference` trỏ tới node không tồn tại. |
-   | `FLOW_UNREACHABLE` | WARNING | Node không nối vào luồng từ StartNode nên không bao giờ chạy. |
-   | `GEOMETRY_REFERENCE` | WARNING | `FromPoint` / `StartPoint` / `Links`... tham chiếu Point / Link chưa được tạo. |
-
-3. **Tầng 3 (DLL gốc của Subassembly Composer):** qua tiến trình nền `SacHost.exe` ([native/](src/sac_mcp/native/)).
-   - Nạp XAML thành cây activity, rồi `ActivityValidationServices.Validate` **biên dịch mọi biểu thức VB**: bắt biến chưa khai báo, cú pháp hỏng, sai kiểu. Lỗi chỉ rõ vị trí, ví dụ *Biểu thức [LaneWidthh * 2] (trong CreatePoint 'P2&L1', đối số DeltaX1): 'LaneWidthh' is not declared*.
-   - Dùng **đúng phiên bản SAC** theo `.cfg` của file (13.6 → 2024 … 13.9 → 2027); nếu máy không có bản đó thì dùng bản mới nhất và ghi INFO. Ghi đè bằng biến môi trường `SAC_INSTALL_DIR`.
-   - Tuỳ chọn `document_check` / `--doc`: mở thêm bằng `SubassemblyDocument` giống SAC GUI, trong một AppDomain riêng (~2 giây/file).
-   - Máy không cài SAC: Tầng 3 được bỏ qua kèm INFO, Tầng 1–2 vẫn chạy đủ.
-
-**Tốc độ:** tiến trình nền được giữ lại giữa các lần gọi. Lần đầu mất khoảng 0,5 giây; các lần sau khoảng 10 ms/file (40 file mẫu: ~2,6 giây).
-
-**Lần chạy đầu tiên:** `SacHost.cs` được biên dịch bằng `csc.exe` có sẵn của .NET Framework 4.x và lưu tại `%LOCALAPPDATA%\sac_mcp\host\<hash>\SacHost.exe`. Bản này tự biên dịch lại khi mã nguồn đổi.
-
----
-
-## 3. An Toàn Khi Sửa File
-
-Mọi tool MCP sửa file `.pkt` đều đi qua cùng một quy trình:
-
-1. **Sửa trong bộ nhớ, ghi ra file tạm** cùng thư mục.
-2. **Kiểm định Tầng 1 + 2** trên file tạm. Nếu phát sinh lỗi *mới* so với file gốc, thay đổi bị huỷ, file gốc giữ nguyên, tool trả về `success: false` kèm danh sách `issues`.
-3. **Sao lưu** file gốc thành `<tên>.pkt.bak` (chỉ giữ bản gần nhất).
-4. **Thay thế nguyên tử** (`os.replace`), nên không bao giờ để lại file ghi dở.
-
-Sau khi lưu, tool chạy thêm **Tầng 3** (khi máy có SAC) và đưa lỗi biên dịch VB vào `warnings`, **không chặn** thao tác.
-Lý do: khi dựng dần, việc tạm dùng một Parameter chưa thêm là bình thường. Tắt bằng `SAC_MCP_NATIVE_ON_SAVE=0`.
-
-Kết quả JSON của tool có thêm:
-
-- `warnings`: các vấn đề không chặn nhưng cần biết, ví dụ lỗi Tầng 3, không đồng bộ được Parameter sang `.atc`, hoặc nhiều nhánh luồng được nối hội tụ.
-- `backup_path`: đường dẫn bản sao lưu.
-
-Khi lỗi, tool trả về JSON `{ "success": false, "error_type", "message", "hint", "issues" }` thay vì traceback.
-
-### Nối node vào Flowchart (`parent_node_id`)
-
-| Giá trị | Hành vi |
-| :--- | :--- |
-| *(bỏ trống)* | Nối node mới vào **mọi đầu ra mở** của luồng (FlowStep chưa có Next, nhánh True/False còn trống), tức tất cả nhánh hội tụ về node mới. Flowchart rỗng thì node mới thành StartNode. |
-| `__ReferenceIDn` | **Chèn** ngay sau FlowStep `n`. Phần luồng phía sau được nối tiếp vào node mới, không bị đứt. |
-| `__ReferenceIDn:True` / `:False` | Chèn vào nhánh True / False của FlowDecision `n`. |
-
-`add_report_message` có `condition_expr` sẽ tạo `FlowDecision`:
-
-- Nhánh **True** chạy ReportMessage rồi đi tiếp.
-- Nhánh **False** đi tiếp ngay.
-- Các node thêm sau đó chạy ở **cả hai** trường hợp.
-
----
-
-## 4. Danh Sách 27 Công Cụ MCP
-
-Docstring của từng tool là nguồn chính xác nhất về tham số. Quy tắc chung cho các tool tạo đối tượng có tên
-(Point / Link / Shape / Loop / Offset): **tên phải chưa tồn tại**. Nếu cần dùng lại cùng tên ở hai nhánh loại
-trừ nhau của một FlowDecision, truyền `allow_duplicate_name=True`.
-
-| Nhóm | Tool | Chức năng |
-| :--- | :--- | :--- |
-| Đọc | `inspect_pkt` | Giải nén `.pkt`, đọc metadata, Parameters, Points, Links, Shapes và sơ đồ Flowchart (kèm `reference_id`). |
-| Đọc | `validate_pkt_native` | Kiểm định 3 tầng; `document_check=True` để mở thêm bằng SubassemblyDocument. |
-| Đọc | `get_sac_reference_and_formulas` | Tra cứu Toolbox, quy ước đặt tên, công thức siêu cao 8 nhánh, hàm VB và API của SAC. |
-| Đọc | `list_examples_and_split_catalog` | Liệt kê các file `.pkt` mẫu và bộ 7 subassembly mô-đun hóa. |
-| Tạo | `create_pkt_from_template` | Tạo `.pkt` mới chuẩn 7 file cho Civil 3D 2025 / 2026 / 2027 (ghi đè thì tự lưu `.bak`). |
-| Tạo | `generate_assembly_recipe` | Sinh mặt cắt mẫu `urban_road` / `highway_lane`. |
-| Sửa | `add_parameter` | Thêm Input/Output/Target Parameter; Input được đồng bộ vào `<Params>` của `.atc`. |
-| Sửa | `add_point_and_link` | Thêm Point / AuxPoint (6 kiểu định vị qua MCP); truyền `link_name` để tự nối Link từ `from_point`. |
-| Sửa | `add_link` | Nối 2 điểm có sẵn bằng `CreateLink` / `CreateAuxLink`. |
-| Sửa | `add_fillet_arc` | Bo cong góc giữa 2 Link (`FilletArcActivity`); cần `second_link`, tự đặt tên điểm đầu/cuối nếu bỏ trống. |
-| Sửa | `add_loop_geometry` | Vòng lặp hình học `CreateLoop` (giật cơ nhiều tầng). |
-| Sửa | `add_intersection_point` | Giao điểm 2 Link (`LinkIntersection` / `AuxIntersection`). |
-| Sửa | `add_strip_surface` | Bóc hữu cơ theo chiều sâu (`StripSurfaceActivity`) trên bề mặt `surface_target` (mặc định `EG`). |
-| Sửa | `add_shape` | Tạo `CreateShape` từ danh sách Link khép kín. |
-| Sửa | `add_report_message` | Thêm `CustomErrorReportActivity` (`Informational` / `Warning` / `Error`), có thể kèm điều kiện `FlowDecision`. |
-| Sửa | `add_curve` | Đường cong `CreateCurve` / `CreateAuxCurve`: `ArcGeneral` (cần `center_point`), `Arc3Points` (cần `arc_point`), `ParabolaGeneral` (cần `mid_ordinate_expr`). |
-| Sửa | `add_offset_geometry` | Đường song song `CreateOffset` từ danh sách Link (VD lớp đệm lót). |
-| Sửa | `add_get_mark_point` / `add_set_mark_point` | Đánh dấu điểm để subassembly khác trong Assembly lấy lại (`MarkName`). |
-| Sửa | `add_define_variable` / `add_set_variable` | Biến nội bộ (`Double`, `Integer`, `String`, `YesNo`); chặn tên trùng Parameter / biến / từ khoá VB. |
-| Sửa | `add_set_output_parameter` | Gán giá trị cho Output Parameter đã khai báo. |
-| Sửa | `add_flow_decision` | Rẽ nhánh điều kiện; đặt node vào nhánh bằng `parent_node_id='<id>:True'` / `'<id>:False'`. |
-| Sửa | `update_node` | Đổi thuộc tính / đối số của một node; đổi tên Point / Link sẽ cập nhật mọi tham chiếu (`rename_references`). |
-| Sửa | `remove_node` | Xoá node và nối lại luồng; FlowDecision cần `keep_branch` nếu hai nhánh khác nhau. |
-| Spec | `export_spec` | Xuất subassembly thành spec JSON khai báo (xem [docs/spec_format.md](docs/spec_format.md)). |
-| Spec | `build_from_spec` | Dựng nguyên một file `.pkt` từ spec JSON trong một lần gọi, kiểm định trước khi lưu. |
-
-### Claude Code Skill đi kèm
-
-[.claude/skills/sac-subassembly-design/](.claude/skills/sac-subassembly-design/SKILL.md) hướng dẫn Claude quy trình thiết kế
-subassembly bằng các tool trên, gồm: đọc bản vẽ, đặt tên và chọn kiểu tham số, thứ tự dựng, rẽ nhánh, kiểm định
-và cách sửa theo từng mã lỗi. Các mẫu đã kiểm chứng (làn xe siêu cao, bó vỉa, đào/đắp, giật cơ, tường chắn,
-kết cấu áo đường) nằm trong `reference/patterns.md`.
-
----
-
-## 5. Cấu Trúc Thư Mục
-
-```text
-MCP - SUBBASEMBLY/
-├── pyproject.toml / sac-cli.bat / README.md
-├── scripts/
-│   ├── build_giaco_taluy_phuyen.py      # Dựng sub Gia Cố Mái Taluy Phú Yên
-│   ├── rebuild_7_subassemblies.py       # Dựng bộ 7 subassembly mô-đun hóa
-│   ├── split_visual_infra.py            # Bóc tách gói SACVisualInfra.pkt
-│   ├── generate_base_templates.py       # Sinh lại templates/base_2025..2027.pkt (ghi đè)
-│   ├── update_activity_catalog.py       # Sinh lại native/activity_catalog.json từ DLL của SAC
-│   ├── test_doc_ctor.ps1 / test_load_sac.ps1
-├── src/sac_mcp/
-│   ├── server.py                        # MCP server (23 tool + 4 tool từ tools_ext.py)
-│   ├── tools_ext.py                     # remove_node, update_node, export_spec, build_from_spec
-│   ├── cli.py                           # sac-cli: validate / build / test
-│   ├── paths.py                         # Thư mục xuất (SAC_OUTPUT_DIR)
-│   ├── models/schemas.py                # Pydantic schemas & enums
-│   ├── native/
-│   │   ├── SacHost.cs                   # Host .NET dùng DLL gốc của SAC (Tầng 3)
-│   │   ├── host.py                      # Biên dịch, cache và quản lý tiến trình SacHost
-│   │   └── activity_catalog.json        # Danh mục activity / thuộc tính / đối số bắt buộc
-│   └── core/
-│       ├── validator.py                 # Kiểm định 3 tầng (PktValidator)
-│       ├── semantic_checks.py           # Kiểm tra ngữ nghĩa tĩnh (Tầng 2)
-│       ├── node_editor.py               # Sửa / xoá node, nối lại luồng
-│       ├── spec_builder.py              # export_spec / build_from_spec
-│       ├── sac_enums.py                 # Nhóm EnumType chuẩn SAC (Side, Yes\No, Superelevation)
-│       ├── opc_package.py               # Đọc / ghi an toàn gói .pkt
-│       ├── xaml_engine.py               # Parser, mutator và mô hình đồ thị Flowchart
-│       ├── version_manager.py           # Cấu hình theo phiên bản Civil 3D
-│       ├── native_suite_builder.py      # Builder 8 subassembly mẫu
-│       ├── knowledge_base.py / recipes.py
-│       └── builders/                    # param_builder, geom_builder, logic_builder
-└── tests/
-```
-
-Server **không ghi file nào khi khởi động**. Thư mục `templates/` chỉ được sinh lại khi chạy `scripts/generate_base_templates.py`.
-
----
-
-## 6. Dùng Với Claude Code, Antigravity Và OpenCode
-
-Skill `sac-subassembly-design` theo chuẩn mở Agent Skills (`SKILL.md` + frontmatter `name` / `description`),
-nên cả ba công cụ đều đọc được. Mỗi công cụ quét một thư mục khác nhau:
-
-| Công cụ | Skill đọc từ | MCP server `sac` cấu hình ở |
-| :--- | :--- | :--- |
-| Claude Code | `.claude/skills/` | cấu hình MCP của Claude Code |
-| Google Antigravity (IDE / CLI) | `.agents/skills/` | `.agents/mcp_config.json` (workspace) |
-| OpenCode | `.claude/skills/` và `.agents/skills/` | `opencode.json` (gốc dự án) |
-
-- **Bản gốc của skill là `.claude/skills/`.** `.agents/skills/` là bản sao cho Antigravity.
-  Sau khi sửa skill, chạy:
-  ```powershell
-  .venv\Scripts\python.exe scripts\sync_agent_skills.py
-  ```
-  Test `tests/test_skill_mirror.py` sẽ trượt nếu hai bản lệch nhau.
-- **Skill cần MCP server mới dùng được** (nó hướng dẫn gọi 27 tool). Hai file `.agents/mcp_config.json` và
-  `opencode.json` khởi động server bằng `.venv` của dự án qua đường dẫn **tuyệt đối** của máy này
-  (`C:/Users/Admin/Desktop/MCP - SUBBASEMBLY`). Chuyển dự án sang máy / thư mục khác thì sửa lại đường dẫn.
-- Antigravity App (bản desktop, khác IDE / CLI) chưa ghi rõ có đọc cấu hình MCP cấp workspace không;
-  nếu không thấy tool, thêm mục `sac` giống `.agents/mcp_config.json` vào cấu hình MCP toàn cục của App.
-- OpenCode thấy skill ở cả hai thư mục với cùng tên; nội dung giống hệt nên dùng bản nào cũng như nhau.
-
----
-
-## 7. Cộng Tác Huấn Luyện Skill Qua Nhánh Git (`skill/*`)
-
-Dự án tích hợp sẵn bộ công cụ `sac-cli skill` (và 5 MCP tools tương ứng) giúp nhiều thành viên cùng tham gia dạy thêm mẫu `.pkt` hoặc quy tắc mới vào Skill `sac-subassembly-design` trên các nhánh Git riêng mà **không bị xung đột (`Zero Merge Conflict`)**. Xem hướng dẫn đầy đủ tại [CONTRIBUTING_SKILL.md](CONTRIBUTING_SKILL.md).
-
-### Các lệnh CLI dành cho thành viên & quản trị viên:
-
-```powershell
-# 1. Tự động cấu hình đường dẫn MCP (.agents/mcp_config.json, opencode.json) cho máy mới clone repo
+# 2. Set up the Python environment & auto-configure MCP + Skill paths
+python -m venv .venv
+.\.venv\Scripts\pip install -e ".[dev]"
 .\sac-cli.bat skill setup --global-skill
+2. CLI Tool (sac-cli.bat)PowerShell# Run 3-tier validation on a .pkt file (add --doc to open via SubassemblyDocument, --no-native to skip Tier 3)
+.\sac-cli.bat validate "D:\path\to\file.pkt"
 
-# 2. Tạo và chuyển sang nhánh huấn luyện riêng (tự chuẩn hóa thành skill/<ten-nhanh>)
+# Quick build and auto-validate
+.\sac-cli.bat build --giaco                            # Slope Protection Subassembly (Gia Cố Mái Taluy)
+.\sac-cli.bat build --sub7                             # Standard 7-Subassembly Suite (parameters only)
+.\sac-cli.bat build --all --out "D:\Export\SUB PHU YEN" # Build all to a specified output directory
+
+# Run test suite
+.\sac-cli.bat test
+Output directory priority: --out → SAC_OUTPUT_DIR environment variable → default ~/Desktop/SUB PHU YEN.3. 3-Tier Validation & Safety MechanismsPlaintext[.pkt] ──> Tier 1: OPC & XML ──> Tier 2: Static XAML & Semantics ──> Tier 3: Native SAC DLLs
+Tier 1 (OPC & XML): Verifies all 6 GUID-named files (.atc, .cfg, .xaml, .pvd, .emd, .cdmd), [Content_Types].xml, and XML syntax.Tier 2 (Static XAML): Runs even without SAC installed. Checks UTF-8 BOM, VB.NET expressions, activity tags, required attributes, and Point/Link/Flowchart references (semantic_checks.py).Tier 3 (Native SAC): Runs via SacHost.exe (auto-compiled on first run using csc.exe, kept alive as a background process at ~10 ms/file). Automatically selects the matching SAC version from .cfg (overridable via SAC_INSTALL_DIR) to compile VB expressions and catch undeclared variable or type errors.Safe File Editing: Every .pkt editing tool writes to a temporary file → runs Tier 1–2 validation → backs up the original as .pkt.bak → performs an atomic swap (os.replace). Tier 3 errors on save are reported as warnings without blocking (disable via SAC_MCP_NATIVE_ON_SAVE=0).4. 27 MCP ToolsCategoryCore ToolsRead & Referenceinspect_pkt, validate_pkt_native, get_sac_reference_and_formulas, list_examples_and_split_catalogCreation & Speccreate_pkt_from_template, generate_assembly_recipe, export_spec, build_from_specGeometryadd_point_and_link, add_link, add_shape, add_fillet_arc, add_curve, add_offset_geometry, add_loop_geometry, add_intersection_point, add_strip_surface, add_get_mark_point / add_set_mark_pointParameters & Logicadd_parameter, add_define_variable / add_set_variable, add_set_output_parameter, add_flow_decision, add_report_messageFlowchart Editingupdate_node (auto-updates references on rename), remove_node (auto-reconnects flow)Flowchart Wiring (parent_node_id): Leave empty to converge all open branches into the new node; pass __ReferenceIDn to insert directly after a FlowStep; pass __ReferenceIDn:True / :False to insert into a FlowDecision branch.Object Naming: Names must be unique by default (pass allow_duplicate_name=True when reusing a name across mutually exclusive branches).5. AI Coding Agent IntegrationThe sac-subassembly-design skill (following the open Agent Skills standard) includes design workflows and verified patterns (reference/patterns.md).ToolSkill Directorysac MCP ConfigurationClaude Code.claude/skills/ (source of truth)Claude Code MCP configGoogle Antigravity.agents/skills/ (mirror).agents/mcp_config.jsonOpenCode.claude/skills/ & .agents/skills/opencode.jsonAfter editing skills in .claude/skills/, run .venv\Scripts\python.exe scripts\sync_agent_skills.py to mirror changes to .agents/skills/.6. Collaborative Skill Training (skill/*)Allows multiple contributors to add new .pkt templates or design rules on isolated Git branches with zero merge conflicts (see CONTRIBUTING_SKILL.md for details):PowerShell# 1. Create a dedicated training branch (automatically prefixed with skill/)
+.\sac-cli.bat skill branch minh-retaining-wall --author "Minh"
+
+# 2a. Learn from a verified .pkt file (3-tier validate -> extract Spec -> generate lesson -> sync)
+.\sac-cli.bat skill learn "C:\Path\To\Component.pkt" --title "RC Retaining Wall" --author "Minh" --notes "Origin at P1"
+
+# 2b. Or add a rule / VB formula / troubleshooting note
+.\sac-cli.bat skill note --title "Curb Origin Rule" --content "Place Origin at P4 or P10..." --author "Minh"
+
+# 3. Verify sync & push to GitHub (prints a ready-to-use PR link)
+.\sac-cli.bat skill check
+.\sac-cli.bat skill push -m "Train RC retaining wall pattern"
+
+# 4. (Maintainers) List and merge contributor branches
+.\sac-cli.bat skill branches --fetch
+.\sac-cli.bat skill merge skill/minh-retaining-wall
+SAC MCP Server & Toolchain (sac-mcp-server)MCP Server & CLI Toolchain chuyên biệt để đọc, thiết kế, kiểm định và tự động tạo file Subassembly (.pkt) cho Autodesk Civil 3D Subassembly Composer.Tạo / sửa: Civil 3D 2025, 2026, 2027.Đọc / kiểm định: Hỗ trợ thêm Civil 3D 2024.1. Cài Đặt NhanhPowerShell# 1. Clone repo
+git clone https://github.com/CrisHoa/MCP-SUBBASEMBLY-For-Civil-3D.git
+cd "MCP-SUBBASEMBLY-For-Civil-3D"
+
+# 2. Cài môi trường Python & tự cấu hình đường dẫn MCP + Skill
+python -m venv .venv
+.\.venv\Scripts\pip install -e ".[dev]"
+.\sac-cli.bat skill setup --global-skill
+2. Công Cụ CLI (sac-cli.bat)PowerShell# Kiểm định 3 tầng một file .pkt (thêm --doc để mở bằng SubassemblyDocument, --no-native để bỏ Tầng 3)
+.\sac-cli.bat validate "D:\duong\dan\file.pkt"
+
+# Dựng nhanh và tự động kiểm định
+.\sac-cli.bat build --giaco                            # Sub Gia Cố Mái Taluy
+.\sac-cli.bat build --sub7                             # Bộ 7 Subassembly chuẩn (chỉ tham số)
+.\sac-cli.bat build --all --out "D:\Xuat\SUB PHU YEN"  # Dựng tất cả ra thư mục chỉ định
+
+# Chạy kiểm thử
+.\sac-cli.bat test
+Thứ tự ưu tiên thư mục xuất: --out → biến môi trường SAC_OUTPUT_DIR → mặc định ~/Desktop/SUB PHU YEN.3. Kiểm Định 3 Tầng & Cơ Chế An ToànPlaintext[.pkt] ──> Tầng 1: OPC & XML ──> Tầng 2: XAML tĩnh & Ngữ nghĩa ──> Tầng 3: DLL gốc của SAC
+Tầng 1 (OPC & XML): Kiểm tra đủ 6 file GUID (.atc, .cfg, .xaml, .pvd, .emd, .cdmd), [Content_Types].xml và cú pháp XML.Tầng 2 (XAML tĩnh): Chạy được khi máy không cài SAC. Kiểm tra UTF-8 BOM, biểu thức VB.NET, thẻ activity, thuộc tính bắt buộc và tham chiếu Point/Link/Flowchart (semantic_checks.py).Tầng 3 (Native SAC): Chạy qua SacHost.exe (tự biên dịch lần đầu bằng csc.exe, giữ tiến trình nền ~10 ms/file). Tự chọn đúng bản SAC theo .cfg (ghi đè qua SAC_INSTALL_DIR) để biên dịch biểu thức VB và bắt lỗi biến/kiểu dữ liệu.Sửa file an toàn: Mọi tool sửa .pkt đều ghi ra file tạm → kiểm định Tầng 1–2 → tự sao lưu .pkt.bak → thay thế nguyên tử (os.replace). Lỗi Tầng 3 khi lưu chỉ báo warnings (tắt bằng SAC_MCP_NATIVE_ON_SAVE=0).4. Bộ 27 Công Cụ MCPNhómCác công cụ chínhĐọc & Tra cứuinspect_pkt, validate_pkt_native, get_sac_reference_and_formulas, list_examples_and_split_catalogKhởi tạo & Speccreate_pkt_from_template, generate_assembly_recipe, export_spec, build_from_specHình họcadd_point_and_link, add_link, add_shape, add_fillet_arc, add_curve, add_offset_geometry, add_loop_geometry, add_intersection_point, add_strip_surface, add_get_mark_point / add_set_mark_pointTham số & Logicadd_parameter, add_define_variable / add_set_variable, add_set_output_parameter, add_flow_decision, add_report_messageChỉnh sửa luồngupdate_node (tự cập nhật tham chiếu khi đổi tên), remove_node (tự nối lại luồng)Nối node (parent_node_id): Bỏ trống để nối mọi nhánh mở hội tụ về node mới; truyền __ReferenceIDn để chèn ngay sau FlowStep; truyền __ReferenceIDn:True / :False để chèn vào nhánh FlowDecision.Tên đối tượng: Mặc định không được trùng (truyền allow_duplicate_name=True nếu dùng lại tên ở hai nhánh loại trừ nhau).5. Tích Hợp AI Coding AgentsSkill sac-subassembly-design (chuẩn Agent Skills) đi kèm quy trình thiết kế và các mẫu đã kiểm chứng (reference/patterns.md).Công cụThư mục SkillCấu hình MCP sacClaude Code.claude/skills/ (bản gốc)Cấu hình MCP của Claude CodeGoogle Antigravity.agents/skills/ (bản sao).agents/mcp_config.jsonOpenCode.claude/skills/ & .agents/skills/opencode.jsonSau khi sửa skill ở .claude/skills/, chạy .venv\Scripts\python.exe scripts\sync_agent_skills.py để đồng bộ sang .agents/skills/.6. Cộng Tác Huấn Luyện Skill (skill/*)Hỗ trợ nhiều thành viên đóng góp mẫu .pkt hoặc quy tắc mới trên nhánh Git riêng mà không xung đột (chi tiết xem CONTRIBUTING_SKILL.md):PowerShell# 1. Tạo nhánh huấn luyện riêng (tự thêm tiền tố skill/)
 .\sac-cli.bat skill branch minh-tuong-chan --author "Minh"
 
-# 3a. Huấn luyện một file .pkt chuẩn vào Skill (kiểm định 3 tầng -> trích Spec JSON -> sinh bài học .md -> đồng bộ .agents)
-.\sac-cli.bat skill learn "C:\Path\To\CauKien.pkt" --title "Tường chắn BTCT mở rộng đáy" --author "Minh" --notes "Gốc tại P1"
+# 2a. Học từ file .pkt chuẩn (kiểm định 3 tầng -> trích Spec -> sinh bài học -> đồng bộ)
+.\sac-cli.bat skill learn "C:\Path\To\CauKien.pkt" --title "Tường chắn BTCT" --author "Minh" --notes "Gốc tại P1"
 
-# 3b. Hoặc thêm bài học quy tắc / công thức VB / cách gỡ lỗi
-.\sac-cli.bat skill note --title "Quy tắc đặt điểm gốc bó vỉa" --content "Đặt Origin tại P4 hoặc P10..." --author "Minh"
+# 2b. Hoặc ghi chú quy tắc / công thức VB
+.\sac-cli.bat skill note --title "Quy tắc gốc bó vỉa" --content "Đặt Origin tại P4 hoặc P10..." --author "Minh"
 
-# 4. Kiểm tra đồng bộ .claude <-> .agents và kiểm định toàn bộ file .pkt đóng góp
+# 3. Kiểm tra đồng bộ & đẩy lên GitHub (tự in link tạo PR)
 .\sac-cli.bat skill check
-
-# 5. Commit và đẩy nhánh huấn luyện lên GitHub (in sẵn link tạo Pull Request)
 .\sac-cli.bat skill push -m "Huấn luyện mẫu tường chắn BTCT"
 
-# 6. (Quản trị viên) Xem danh sách nhánh huấn luyện và gộp nhánh của thành viên
+# 4. (Quản trị viên) Xem và gộp nhánh
 .\sac-cli.bat skill branches --fetch
 .\sac-cli.bat skill merge skill/minh-tuong-chan
-```
