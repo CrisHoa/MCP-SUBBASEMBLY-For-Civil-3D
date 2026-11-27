@@ -48,6 +48,8 @@ def test_collaborative_branch_training_and_zero_conflict_merge(tmp_path: Path, m
     fake_home = tmp_path / "home"
     (fake_home / ".gemini" / "antigravity").mkdir(parents=True)
     (fake_home / ".codex").mkdir()
+    (fake_home / ".config" / "opencode").mkdir(parents=True)
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setattr(Path, "home", lambda: fake_home)
     sample_pkt = (
         ROOT_DIR
@@ -69,6 +71,9 @@ def test_collaborative_branch_training_and_zero_conflict_merge(tmp_path: Path, m
         (fake_home / ".gemini" / "antigravity" / "mcp_config.json").read_text(encoding="utf-8")
     )["mcpServers"]
     assert "[mcp_servers.sac]" in (fake_home / ".codex" / "config.toml").read_text(encoding="utf-8")
+    oc_cfg = json.loads((fake_home / ".config" / "opencode" / "opencode.json").read_text(encoding="utf-8"))
+    assert oc_cfg["mcp"]["sac"]["command"][-2:] == ["-m", "sac_mcp.server"]
+    assert (fake_home / ".config" / "opencode" / "skills" / "sac-subassembly-design" / "SKILL.md").exists()
     assert (fake_home / ".agents" / "skills" / "sac-subassembly-design" / "SKILL.md").exists()
 
     # 2. Thành viên 1 (Minh) tạo nhánh skill/minh-lan-xe và huấn luyện từ file .pkt

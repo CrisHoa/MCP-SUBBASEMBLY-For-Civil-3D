@@ -108,15 +108,16 @@ def cmd_skill(args: argparse.Namespace) -> int:
                 claude_code=not args.no_claude,
                 antigravity=not args.no_antigravity,
                 codex=not args.no_codex,
+                opencode=not args.no_opencode,
             )
             print("✅ Đã cấu hình đường dẫn MCP và đồng bộ Skill cho máy hiện tại:")
             print(f"  - Python       : {info['python_command']}")
             print(f"  - Antigravity (repo): {info['agents_mcp_config']}")
-            print(f"  - OpenCode     : {info['opencode_config']}")
+            print(f"  - OpenCode (repo): {info['opencode_config']}")
             print(f"  - Skill Synced : {info['skill_sync']['files_synced']} files (.claude/skills -> .agents/skills)")
             if info["skill_sync"]["global_skill_synced"]:
                 print(f"  - Global Skill : {info['skill_sync']['global_skill_synced']}")
-            for key, label in (("claude_code", "Claude Code"), ("antigravity", "Antigravity"), ("codex", "Codex")):
+            for key, label in (("claude_code", "Claude Code"), ("antigravity", "Antigravity"), ("codex", "Codex"), ("opencode", "OpenCode")):
                 agent = info.get(key)
                 if not agent:
                     continue
@@ -124,7 +125,7 @@ def cmd_skill(args: argparse.Namespace) -> int:
                 print(f"  - {label + ' skill':<12} : {', '.join(agent['skills'])} -> {agent['skills_dir']}")
                 if agent["removed_duplicates"]:
                     print(f"    (đã gỡ mục trùng server: {', '.join(agent['removed_duplicates'])})")
-            print("  => Khởi động lại / mở phiên MỚI của Claude Code, Antigravity, Codex để nạp MCP 'sac' và skill.")
+            print("  => Khởi động lại / mở phiên MỚI của Claude Code, Antigravity, Codex, OpenCode để nạp MCP 'sac' và skill.")
             return 0
 
         if action == "branch":
@@ -273,6 +274,7 @@ def main() -> None:
     p_setup.add_argument("--no-claude", action="store_true", help="Không đăng ký MCP/skill vào Claude Code (~/.claude.json, ~/.claude/skills/)")
     p_setup.add_argument("--no-antigravity", action="store_true", help="Không đăng ký vào Antigravity (~/.gemini/antigravity/mcp_config.json, skills/)")
     p_setup.add_argument("--no-codex", action="store_true", help="Không đăng ký vào Codex (~/.codex/config.toml, ~/.agents/skills/)")
+    p_setup.add_argument("--no-opencode", action="store_true", help="Không đăng ký vào OpenCode toàn máy (~/.config/opencode/opencode.json, skills/)")
 
     p_branch = skill_sub.add_parser("branch", help="Tạo hoặc chuyển sang nhánh huấn luyện skill/<ten-nhanh>")
     p_branch.add_argument("name", help="Tên nhánh (VD: minh-cong-hop hoặc skill/minh-cong-hop)")

@@ -107,6 +107,16 @@ def _registration_ok() -> bool:
             return False
         if _codex_block(py, src) not in toml_text or not _skills_ok(home / ".agents" / "skills"):
             return False
+
+    # OpenCode toàn máy (nếu máy có cài OpenCode; bỏ qua nếu dùng opencode.jsonc - setup không sửa file có chú thích)
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    oc = (Path(xdg) if xdg else home / ".config") / "opencode"
+    if oc.is_dir() and ((oc / "opencode.json").exists() or not (oc / "opencode.jsonc").exists()):
+        sac = _load_json(oc / "opencode.json").get("mcp", {}).get("sac", {})
+        if sac.get("command") != [py, "-m", "sac_mcp.server"] or sac.get("environment", {}).get("PYTHONPATH") != src:
+            return False
+        if not _skills_ok(oc / "skills"):
+            return False
     return True
 
 
@@ -194,6 +204,8 @@ def main(argv: list) -> int:
             return 1
         if force:
             print(res.stdout.rstrip())
+        if res.stderr.strip():
+            sys.stderr.write(res.stderr)
         done.append("đăng ký MCP 'sac' + skill (Claude Code, Antigravity, Codex, OpenCode)")
 
     # 4) git hook
@@ -204,7 +216,7 @@ def main(argv: list) -> int:
     if done:
         print("[SAC setup] Đã: " + "; ".join(done) + ".")
         if any("MCP" in d for d in done):
-            print("[SAC setup] Mở phiên MỚI của Claude Code / Antigravity / Codex để nạp MCP 'sac' và skill mới.")
+            print("[SAC setup] Mở phiên MỚI của Claude Code / Antigravity / Codex / OpenCode để nạp MCP 'sac' và skill mới.")
     return 0
 
 
