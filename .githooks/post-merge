@@ -1,0 +1,3 @@
+#!/bin/sh
+# Sau git pull / git merge
+exec sh "$(git rev-parse --show-toplevel)/.githooks/_sac_update.sh"

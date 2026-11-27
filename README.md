@@ -1,10 +1,30 @@
 ## 1. Setup
 
+Requires Python 3.10+ on PATH (Git for Windows for the git hooks).
+
+**Automatic (Claude Code):** `git clone`, open Claude Code in the repo folder and trust it. The `SessionStart` hook in `.claude/settings.json` runs `scripts/sac_auto_setup.py`, which installs everything missing (first run ≈ 1 min, later runs ≈ 0.2 s and silent). **Open a second session** to get the `sac` tools — MCP servers load only at session start.
+
+**Manual (any agent):** run once from the repo folder:
+
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\pip install -e ".[dev]"
-.\sac-cli.bat skill setup --global-skill
+.\setup.bat
 ```
+
+**Auto-update after `git pull`:** setup sets `git config core.hooksPath .githooks`, so `post-merge` / `post-rewrite` / `post-checkout` re-run the quick check after every pull or branch switch: changed skills are re-copied, and dependencies are reinstalled only when `pyproject.toml` changed.
+
+Setup creates `.venv`, installs the dependencies, then runs `sac-cli skill setup`, which writes the paths of **this machine** into (`.agents/mcp_config.json` and `opencode.json` are generated per machine and git-ignored):
+
+| Agent | MCP server `sac` | Skills |
+| :--- | :--- | :--- |
+| **Claude Code** | `~/.claude.json` → `mcpServers.sac` (backup: `~/.claude.json.bak-sac`) | copied to `~/.claude/skills/` (usable from any folder) |
+| **Google Antigravity** | `.agents/mcp_config.json` | `.agents/skills/` (+ `~/.gemini/config/skills/` with `--global-skill`) |
+| **OpenCode** | `opencode.json` | `.claude/skills/` & `.agents/skills/` |
+
+Options are passed through: `.\setup.bat --global-skill` (also sync to Gemini), `.\setup.bat --no-claude` (skip Claude Code).
+
+Then **open a new Claude Code session** — the `sac` tools and the 4 `sac-*` skills load at session start.
+
+> Do not move or rename the repo folder after setup (the MCP path is absolute). If you do, run `.\setup.bat` again.
 
 ## 2. CLI Tool (`sac-cli.bat`)
 
@@ -57,7 +77,7 @@ python -m venv .venv
 
 | Tool | Skill Directory | MCP Config |
 | :--- | :--- | :--- |
-| **Claude Code** | `.claude/skills/` (source of truth) | Claude Code MCP config |
+| **Claude Code** | `.claude/skills/` (source of truth) → `~/.claude/skills/` | `~/.claude.json` (written by `setup.bat`) |
 | **Google Antigravity** | `.agents/skills/` (mirror) | `.agents/mcp_config.json` |
 | **OpenCode** | `.claude/skills/` & `.agents/skills/` | `opencode.json` |
 

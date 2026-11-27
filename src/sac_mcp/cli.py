@@ -102,7 +102,7 @@ def cmd_skill(args: argparse.Namespace) -> int:
     action = args.skill_action
     try:
         if action == "setup":
-            info = st.setup_workspace(ROOT_DIR, sync_global=args.global_skill)
+            info = st.setup_workspace(ROOT_DIR, sync_global=args.global_skill, claude_code=not args.no_claude)
             print("✅ Đã cấu hình đường dẫn MCP và đồng bộ Skill cho máy hiện tại:")
             print(f"  - Python       : {info['python_command']}")
             print(f"  - Antigravity  : {info['agents_mcp_config']}")
@@ -110,6 +110,11 @@ def cmd_skill(args: argparse.Namespace) -> int:
             print(f"  - Skill Synced : {info['skill_sync']['files_synced']} files (.claude/skills -> .agents/skills)")
             if info["skill_sync"]["global_skill_synced"]:
                 print(f"  - Global Skill : {info['skill_sync']['global_skill_synced']}")
+            if info.get("claude_code"):
+                cc = info["claude_code"]
+                print(f"  - Claude Code  : MCP 'sac' -> {cc['claude_config']}")
+                print(f"  - Claude Skill : {', '.join(cc['claude_skills'])} -> {cc['claude_skills_dir']}")
+                print("  => Mở một phiên Claude Code MỚI để thấy MCP 'sac' và các skill.")
             return 0
 
         if action == "branch":
@@ -255,6 +260,7 @@ def main() -> None:
 
     p_setup = skill_sub.add_parser("setup", help="Cấu hình đường dẫn MCP và đồng bộ skill cho máy vừa clone repo")
     p_setup.add_argument("--global-skill", action="store_true", help="Đồng bộ luôn vào ~/.gemini/config/skills/")
+    p_setup.add_argument("--no-claude", action="store_true", help="Không đăng ký MCP/skill vào Claude Code (~/.claude.json, ~/.claude/skills/)")
 
     p_branch = skill_sub.add_parser("branch", help="Tạo hoặc chuyển sang nhánh huấn luyện skill/<ten-nhanh>")
     p_branch.add_argument("name", help="Tên nhánh (VD: minh-cong-hop hoặc skill/minh-cong-hop)")

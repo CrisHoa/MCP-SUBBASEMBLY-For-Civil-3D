@@ -120,9 +120,53 @@ def sync_skills(root_dir: Path = ROOT_DIR, sync_global: bool = False) -> Dict[st
     }
 
 
-def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False) -> Dict[str, Any]:
+def setup_claude_code(root_dir: Path, py_exec: str, src_dir: str) -> Dict[str, Any]:
     """
-    Cấu hình đường dẫn tuyệt đối của máy hiện tại cho `.agents/mcp_config.json` và `opencode.json`,
+    Đăng ký MCP server `sac` vào cấu hình người dùng của Claude Code (`~/.claude.json`, mục `mcpServers`)
+    và chép các skill trong `.claude/skills/` sang `~/.claude/skills/` để dùng được ở mọi thư mục.
+    Ghi đè an toàn: sao lưu `~/.claude.json` thành `~/.claude.json.bak-sac` trước khi ghi, ghi qua file tạm rồi thay thế.
+    """
+    home = Path.home()
+    cfg_path = home / ".claude.json"
+    cfg: Dict[str, Any] = {}
+    if cfg_path.exists():
+        raw = cfg_path.read_text(encoding="utf-8")
+        try:
+            cfg = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Không đọc được {cfg_path} (JSON lỗi: {exc}). Hãy sửa file này rồi chạy lại.") from exc
+        shutil.copy2(cfg_path, home / ".claude.json.bak-sac")
+
+    cfg.setdefault("mcpServers", {})["sac"] = {
+        "type": "stdio",
+        "command": py_exec,
+        "args": ["-m", "sac_mcp.server"],
+        "env": {"PYTHONPATH": src_dir, "PYTHONIOENCODING": "utf-8"},
+    }
+    tmp_path = cfg_path.with_name(".claude.json.tmp-sac")
+    tmp_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp_path.replace(cfg_path)
+
+    src_skills = root_dir / ".claude" / "skills"
+    dst_root = home / ".claude" / "skills"
+    dst_root.mkdir(parents=True, exist_ok=True)
+    installed: List[str] = []
+    for src_skill in sorted(src_skills.iterdir()):
+        if not src_skill.is_dir():
+            continue
+        target = dst_root / src_skill.name
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(src_skill, target)
+        installed.append(src_skill.name)
+
+    return {"claude_config": str(cfg_path), "claude_skills_dir": str(dst_root), "claude_skills": installed}
+
+
+def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False, claude_code: bool = True) -> Dict[str, Any]:
+    """
+    Cấu hình đường dẫn tuyệt đối của máy hiện tại cho `.agents/mcp_config.json`, `opencode.json`
+    và (mặc định) Claude Code (`~/.claude.json` + `~/.claude/skills/`),
     giúp người mới clone repo về máy bất kỳ đều chạy được ngay MCP server và Skill.
     """
     root_dir = Path(root_dir).resolve()
@@ -165,12 +209,14 @@ def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False) -> Dic
     opencode_cfg_path.write_text(json.dumps(opencode_cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     sync_info = sync_skills(root_dir=root_dir, sync_global=sync_global)
+    claude_info = setup_claude_code(root_dir, py_exec, src_dir) if claude_code else None
     return {
         "root_dir": root_dir.as_posix(),
         "python_command": py_exec,
         "agents_mcp_config": str(agents_cfg_path),
         "opencode_config": str(opencode_cfg_path),
         "skill_sync": sync_info,
+        "claude_code": claude_info,
     }
 
 
