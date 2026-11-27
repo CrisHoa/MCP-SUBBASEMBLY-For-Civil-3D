@@ -10,6 +10,7 @@ Bao gồm:
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -41,8 +42,13 @@ def test_slugify_and_normalize_branch():
     assert st.normalize_branch_name("skill/hung-taluy") == "skill/hung-taluy"
 
 
-def test_collaborative_branch_training_and_zero_conflict_merge(tmp_path: Path):
+def test_collaborative_branch_training_and_zero_conflict_merge(tmp_path: Path, monkeypatch):
     repo = _init_temp_git_repo(tmp_path)
+    # HOME giả: setup_workspace ghi cấu hình toàn máy (Claude/Antigravity/Codex) - không được đụng máy thật
+    fake_home = tmp_path / "home"
+    (fake_home / ".gemini" / "antigravity").mkdir(parents=True)
+    (fake_home / ".codex").mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
     sample_pkt = (
         ROOT_DIR
         / "examples"
@@ -58,6 +64,12 @@ def test_collaborative_branch_training_and_zero_conflict_merge(tmp_path: Path):
     assert (repo / ".agents" / "mcp_config.json").exists()
     assert (repo / "opencode.json").exists()
     assert setup_info["skill_sync"]["files_synced"] >= 5
+    assert "sac" in json.loads((fake_home / ".claude.json").read_text(encoding="utf-8"))["mcpServers"]
+    assert "sac" in json.loads(
+        (fake_home / ".gemini" / "antigravity" / "mcp_config.json").read_text(encoding="utf-8")
+    )["mcpServers"]
+    assert "[mcp_servers.sac]" in (fake_home / ".codex" / "config.toml").read_text(encoding="utf-8")
+    assert (fake_home / ".agents" / "skills" / "sac-subassembly-design" / "SKILL.md").exists()
 
     # 2. Thành viên 1 (Minh) tạo nhánh skill/minh-lan-xe và huấn luyện từ file .pkt
     b1 = st.start_training_branch("minh-lan-xe", author="Minh", root_dir=repo)

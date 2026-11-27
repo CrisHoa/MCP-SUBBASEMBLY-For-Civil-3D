@@ -55,24 +55,58 @@ def _load_json(path: Path) -> dict:
         return {}
 
 
+def _json_mcp_ok(cfg_path: Path, py: str, src: str) -> bool:
+    sac = _load_json(cfg_path).get("mcpServers", {}).get("sac", {})
+    return sac.get("command") == py and sac.get("env", {}).get("PYTHONPATH") == src
+
+
+def _skills_ok(dst_root: Path) -> bool:
+    return all(_same_tree(s, dst_root / s.name) for s in SKILLS_SRC.iterdir() if s.is_dir())
+
+
+def _codex_block(py: str, src: str) -> str:
+    # Phải giống hệt sac_mcp.core.skill_trainer.codex_mcp_block (script này không import sac_mcp
+    # vì có thể chạy bằng Python hệ thống chưa có thư viện).
+    return (
+        "[mcp_servers.sac]\n"
+        f"command = {json.dumps(py)}\n"
+        f"args = {json.dumps(['-m', 'sac_mcp.server'])}\n"
+        "startup_timeout_sec = 60\n"
+        "\n"
+        "[mcp_servers.sac.env]\n"
+        f"PYTHONPATH = {json.dumps(src)}\n"
+        'PYTHONIOENCODING = "utf-8"\n'
+    )
+
+
 def _registration_ok() -> bool:
     py = VENV_PY.as_posix()
     src = (ROOT / "src").as_posix()
+    home = Path.home()
 
-    claude = _load_json(Path.home() / ".claude.json").get("mcpServers", {}).get("sac", {})
-    if claude.get("command") != py or claude.get("env", {}).get("PYTHONPATH") != src:
+    # Claude Code
+    if not _json_mcp_ok(home / ".claude.json", py, src) or not _skills_ok(home / ".claude" / "skills"):
         return False
 
+    # Antigravity: cấu hình trong repo + cấu hình toàn máy (nếu máy có cài Antigravity)
     agents = _load_json(ROOT / ".agents" / "mcp_config.json").get("mcpServers", {}).get("sac", {})
     if agents.get("command") != py:
         return False
-
-    dst_root = Path.home() / ".claude" / "skills"
-    for skill in SKILLS_SRC.iterdir():
-        if skill.is_dir() and not _same_tree(skill, dst_root / skill.name):
-            return False
     if (ROOT / ".agents" / "skills").is_dir() and not _same_tree(SKILLS_SRC, ROOT / ".agents" / "skills"):
         return False
+    ag = home / ".gemini" / "antigravity"
+    if ag.is_dir() and (not _json_mcp_ok(ag / "mcp_config.json", py, src) or not _skills_ok(ag / "skills")):
+        return False
+
+    # Codex (nếu máy có cài Codex)
+    cx = home / ".codex"
+    if cx.is_dir():
+        try:
+            toml_text = (cx / "config.toml").read_text(encoding="utf-8")
+        except OSError:
+            return False
+        if _codex_block(py, src) not in toml_text or not _skills_ok(home / ".agents" / "skills"):
+            return False
     return True
 
 
@@ -160,7 +194,7 @@ def main(argv: list) -> int:
             return 1
         if force:
             print(res.stdout.rstrip())
-        done.append("đăng ký MCP 'sac' + skill (Claude Code, Antigravity, OpenCode)")
+        done.append("đăng ký MCP 'sac' + skill (Claude Code, Antigravity, Codex, OpenCode)")
 
     # 4) git hook
     if not _hooks_ok():
@@ -170,7 +204,7 @@ def main(argv: list) -> int:
     if done:
         print("[SAC setup] Đã: " + "; ".join(done) + ".")
         if any("MCP" in d for d in done):
-            print("[SAC setup] Mở một phiên Claude Code MỚI để nạp MCP 'sac' và skill mới.")
+            print("[SAC setup] Mở phiên MỚI của Claude Code / Antigravity / Codex để nạp MCP 'sac' và skill mới.")
     return 0
 
 

@@ -120,38 +120,14 @@ def sync_skills(root_dir: Path = ROOT_DIR, sync_global: bool = False) -> Dict[st
     }
 
 
-def setup_claude_code(root_dir: Path, py_exec: str, src_dir: str) -> Dict[str, Any]:
-    """
-    Đăng ký MCP server `sac` vào cấu hình người dùng của Claude Code (`~/.claude.json`, mục `mcpServers`)
-    và chép các skill trong `.claude/skills/` sang `~/.claude/skills/` để dùng được ở mọi thư mục.
-    Ghi đè an toàn: sao lưu `~/.claude.json` thành `~/.claude.json.bak-sac` trước khi ghi, ghi qua file tạm rồi thay thế.
-    """
-    home = Path.home()
-    cfg_path = home / ".claude.json"
-    cfg: Dict[str, Any] = {}
-    if cfg_path.exists():
-        raw = cfg_path.read_text(encoding="utf-8")
-        try:
-            cfg = json.loads(raw) if raw.strip() else {}
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(f"Không đọc được {cfg_path} (JSON lỗi: {exc}). Hãy sửa file này rồi chạy lại.") from exc
-        shutil.copy2(cfg_path, home / ".claude.json.bak-sac")
+SAC_MCP_ARGS = ["-m", "sac_mcp.server"]
 
-    cfg.setdefault("mcpServers", {})["sac"] = {
-        "type": "stdio",
-        "command": py_exec,
-        "args": ["-m", "sac_mcp.server"],
-        "env": {"PYTHONPATH": src_dir, "PYTHONIOENCODING": "utf-8"},
-    }
-    tmp_path = cfg_path.with_name(".claude.json.tmp-sac")
-    tmp_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    tmp_path.replace(cfg_path)
 
-    src_skills = root_dir / ".claude" / "skills"
-    dst_root = home / ".claude" / "skills"
+def _copy_skills(root_dir: Path, dst_root: Path) -> List[str]:
+    """Chép từng skill trong `.claude/skills/` sang `dst_root/<tên skill>` (ghi đè skill cùng tên, giữ skill khác)."""
     dst_root.mkdir(parents=True, exist_ok=True)
     installed: List[str] = []
-    for src_skill in sorted(src_skills.iterdir()):
+    for src_skill in sorted((root_dir / ".claude" / "skills").iterdir()):
         if not src_skill.is_dir():
             continue
         target = dst_root / src_skill.name
@@ -159,14 +135,143 @@ def setup_claude_code(root_dir: Path, py_exec: str, src_dir: str) -> Dict[str, A
             shutil.rmtree(target)
         shutil.copytree(src_skill, target)
         installed.append(src_skill.name)
+    return installed
 
-    return {"claude_config": str(cfg_path), "claude_skills_dir": str(dst_root), "claude_skills": installed}
+
+def _write_atomic(path: Path, text: str) -> None:
+    """Sao lưu `<file>.bak-sac` rồi ghi qua file tạm + thay thế (không để file hỏng nửa chừng)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        shutil.copy2(path, path.with_name(path.name + ".bak-sac"))
+    tmp = path.with_name(path.name + ".tmp-sac")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
 
 
-def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False, claude_code: bool = True) -> Dict[str, Any]:
+def _upsert_json_mcp(cfg_path: Path, entry: Dict[str, Any]) -> List[str]:
+    """
+    Ghi `mcpServers.sac` vào file JSON. Mục khác chạy cùng server (`-m sac_mcp.server`, tên khác "sac",
+    ví dụ do người dùng tự thêm tay) sẽ được gỡ để không bị trùng 32 tool. Trả về tên các mục đã gỡ.
+    """
+    cfg: Dict[str, Any] = {}
+    if cfg_path.exists():
+        raw = cfg_path.read_text(encoding="utf-8")
+        try:
+            cfg = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Không đọc được {cfg_path} (JSON lỗi: {exc}). Hãy sửa file này rồi chạy lại.") from exc
+    servers = cfg.setdefault("mcpServers", {})
+    removed = [
+        name for name, srv in list(servers.items())
+        if name != "sac" and isinstance(srv, dict) and list(srv.get("args") or [])[-2:] == SAC_MCP_ARGS
+    ]
+    for name in removed:
+        del servers[name]
+    servers["sac"] = entry
+    _write_atomic(cfg_path, json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
+    return removed
+
+
+def setup_claude_code(root_dir: Path, py_exec: str, src_dir: str) -> Dict[str, Any]:
+    """
+    Claude Code: MCP `sac` vào `~/.claude.json` (mục `mcpServers`), skill vào `~/.claude/skills/`.
+    """
+    home = Path.home()
+    cfg_path = home / ".claude.json"
+    removed = _upsert_json_mcp(cfg_path, {
+        "type": "stdio",
+        "command": py_exec,
+        "args": SAC_MCP_ARGS,
+        "env": {"PYTHONPATH": src_dir, "PYTHONIOENCODING": "utf-8"},
+    })
+    dst_root = home / ".claude" / "skills"
+    return {"config": str(cfg_path), "skills_dir": str(dst_root),
+            "skills": _copy_skills(root_dir, dst_root), "removed_duplicates": removed}
+
+
+def antigravity_home() -> Path:
+    return Path.home() / ".gemini" / "antigravity"
+
+
+def setup_antigravity_global(root_dir: Path, py_exec: str, src_dir: str) -> Optional[Dict[str, Any]]:
+    """
+    Google Antigravity (cấu hình toàn máy): MCP `sac` vào `~/.gemini/antigravity/mcp_config.json`,
+    skill vào `~/.gemini/antigravity/skills/`. Bỏ qua nếu máy chưa cài Antigravity.
+    """
+    ag = antigravity_home()
+    if not ag.is_dir():
+        return None
+    cfg_path = ag / "mcp_config.json"
+    removed = _upsert_json_mcp(cfg_path, {
+        "command": py_exec,
+        "args": SAC_MCP_ARGS,
+        "env": {"PYTHONPATH": src_dir, "PYTHONIOENCODING": "utf-8"},
+    })
+    dst_root = ag / "skills"
+    return {"config": str(cfg_path), "skills_dir": str(dst_root),
+            "skills": _copy_skills(root_dir, dst_root), "removed_duplicates": removed}
+
+
+def codex_home() -> Path:
+    return Path.home() / ".codex"
+
+
+def codex_mcp_block(py_exec: str, src_dir: str) -> str:
+    """Khối TOML `[mcp_servers.sac]` cho Codex (chuỗi JSON cũng là chuỗi TOML hợp lệ)."""
+    return (
+        "[mcp_servers.sac]\n"
+        f"command = {json.dumps(py_exec)}\n"
+        f"args = {json.dumps(SAC_MCP_ARGS)}\n"
+        "startup_timeout_sec = 60\n"
+        "\n"
+        "[mcp_servers.sac.env]\n"
+        f"PYTHONPATH = {json.dumps(src_dir)}\n"
+        'PYTHONIOENCODING = "utf-8"\n'
+    )
+
+
+def _strip_toml_tables(text: str, table: str) -> str:
+    """Gỡ bảng `[table]` và mọi bảng con `[table.*]` khỏi nội dung TOML (giữ nguyên phần còn lại)."""
+    out: List[str] = []
+    skipping = False
+    for line in text.splitlines(keepends=True):
+        m = re.match(r"^\s*\[\s*([^\[\]]+?)\s*\]\s*(#.*)?$", line)
+        if m:
+            name = m.group(1).replace('"', "").replace("'", "")
+            skipping = name == table or name.startswith(table + ".")
+        if not skipping:
+            out.append(line)
+    return "".join(out)
+
+
+def setup_codex(root_dir: Path, py_exec: str, src_dir: str) -> Optional[Dict[str, Any]]:
+    """
+    OpenAI Codex: MCP `sac` vào `~/.codex/config.toml` (bảng `[mcp_servers.sac]`),
+    skill vào `~/.agents/skills/` (thư mục skill người dùng của Codex). Bỏ qua nếu máy chưa cài Codex.
+    """
+    cx = codex_home()
+    if not cx.is_dir():
+        return None
+    cfg_path = cx / "config.toml"
+    text = cfg_path.read_text(encoding="utf-8") if cfg_path.exists() else ""
+    text = _strip_toml_tables(text, "mcp_servers.sac").rstrip()
+    text = (text + "\n\n" if text else "") + codex_mcp_block(py_exec, src_dir)
+    _write_atomic(cfg_path, text)
+    dst_root = Path.home() / ".agents" / "skills"
+    return {"config": str(cfg_path), "skills_dir": str(dst_root),
+            "skills": _copy_skills(root_dir, dst_root), "removed_duplicates": []}
+
+
+def setup_workspace(
+    root_dir: Path = ROOT_DIR,
+    sync_global: bool = False,
+    claude_code: bool = True,
+    antigravity: bool = True,
+    codex: bool = True,
+) -> Dict[str, Any]:
     """
     Cấu hình đường dẫn tuyệt đối của máy hiện tại cho `.agents/mcp_config.json`, `opencode.json`
-    và (mặc định) Claude Code (`~/.claude.json` + `~/.claude/skills/`),
+    và (mặc định, nếu máy có cài) Claude Code, Antigravity (`~/.gemini/antigravity/`), Codex (`~/.codex/`),
     giúp người mới clone repo về máy bất kỳ đều chạy được ngay MCP server và Skill.
     """
     root_dir = Path(root_dir).resolve()
@@ -210,6 +315,8 @@ def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False, claude
 
     sync_info = sync_skills(root_dir=root_dir, sync_global=sync_global)
     claude_info = setup_claude_code(root_dir, py_exec, src_dir) if claude_code else None
+    antigravity_info = setup_antigravity_global(root_dir, py_exec, src_dir) if antigravity else None
+    codex_info = setup_codex(root_dir, py_exec, src_dir) if codex else None
     return {
         "root_dir": root_dir.as_posix(),
         "python_command": py_exec,
@@ -217,6 +324,8 @@ def setup_workspace(root_dir: Path = ROOT_DIR, sync_global: bool = False, claude
         "opencode_config": str(opencode_cfg_path),
         "skill_sync": sync_info,
         "claude_code": claude_info,
+        "antigravity": antigravity_info,
+        "codex": codex_info,
     }
 
 

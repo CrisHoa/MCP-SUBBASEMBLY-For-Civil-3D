@@ -17,12 +17,15 @@ Setup creates `.venv`, installs the dependencies, then runs `sac-cli skill setup
 | Agent | MCP server `sac` | Skills |
 | :--- | :--- | :--- |
 | **Claude Code** | `~/.claude.json` → `mcpServers.sac` (backup: `~/.claude.json.bak-sac`) | copied to `~/.claude/skills/` (usable from any folder) |
-| **Google Antigravity** | `.agents/mcp_config.json` | `.agents/skills/` (+ `~/.gemini/config/skills/` with `--global-skill`) |
+| **Google Antigravity** | `~/.gemini/antigravity/mcp_config.json` → `mcpServers.sac` + `.agents/mcp_config.json` | copied to `~/.gemini/antigravity/skills/` + `.agents/skills/` (+ `~/.gemini/config/skills/` with `--global-skill`) |
+| **OpenAI Codex** | `~/.codex/config.toml` → `[mcp_servers.sac]` | copied to `~/.agents/skills/` |
 | **OpenCode** | `opencode.json` | `.claude/skills/` & `.agents/skills/` |
 
-Options are passed through: `.\setup.bat --global-skill` (also sync to Gemini), `.\setup.bat --no-claude` (skip Claude Code).
+Antigravity and Codex are configured only if installed (`~/.gemini/antigravity/`, `~/.codex/` exist). Every global config file is backed up as `<file>.bak-sac` before writing; any other entry running `-m sac_mcp.server` under another name is removed so tools are not duplicated.
 
-Then **open a new Claude Code session** — the `sac` tools and the 4 `sac-*` skills load at session start.
+Options are passed through: `.\setup.bat --global-skill` (also sync to `~/.gemini/config/skills/`), `--no-claude`, `--no-antigravity`, `--no-codex`.
+
+Then **restart / open a new session** of Claude Code, Antigravity or Codex — the `sac` tools and the 4 `sac-*` skills load at session start.
 
 > Do not move or rename the repo folder after setup (the MCP path is absolute). If you do, run `.\setup.bat` again.
 
@@ -78,7 +81,8 @@ Then **open a new Claude Code session** — the `sac` tools and the 4 `sac-*` sk
 | Tool | Skill Directory | MCP Config |
 | :--- | :--- | :--- |
 | **Claude Code** | `.claude/skills/` (source of truth) → `~/.claude/skills/` | `~/.claude.json` (written by `setup.bat`) |
-| **Google Antigravity** | `.agents/skills/` (mirror) | `.agents/mcp_config.json` |
+| **Google Antigravity** | `.agents/skills/` (mirror) → `~/.gemini/antigravity/skills/` | `~/.gemini/antigravity/mcp_config.json` + `.agents/mcp_config.json` |
+| **OpenAI Codex** | `.agents/skills/` (repo) → `~/.agents/skills/` | `~/.codex/config.toml` |
 | **OpenCode** | `.claude/skills/` & `.agents/skills/` | `opencode.json` |
 
 After editing `.claude/skills/`, sync to `.agents/skills/` via:
