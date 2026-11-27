@@ -212,6 +212,61 @@ def setup_antigravity_global(root_dir: Path, py_exec: str, src_dir: str) -> Opti
             "skills": _copy_skills(root_dir, dst_root), "removed_duplicates": removed}
 
 
+def opencode_home() -> Path:
+    """Thư mục cấu hình toàn máy của OpenCode: `$XDG_CONFIG_HOME/opencode` hoặc `~/.config/opencode`."""
+    import os
+
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    return (Path(xdg) if xdg else Path.home() / ".config") / "opencode"
+
+
+def opencode_mcp_entry(py_exec: str, src_dir: str) -> Dict[str, Any]:
+    return {
+        "type": "local",
+        "command": [py_exec, *SAC_MCP_ARGS],
+        "environment": {"PYTHONPATH": src_dir, "PYTHONIOENCODING": "utf-8"},
+        "enabled": True,
+    }
+
+
+def setup_opencode_global(root_dir: Path, py_exec: str, src_dir: str) -> Optional[Dict[str, Any]]:
+    """
+    OpenCode (cấu hình toàn máy): MCP `sac` vào `~/.config/opencode/opencode.json` (mục `mcp`),
+    skill vào `~/.config/opencode/skills/`. Bỏ qua nếu máy chưa cài OpenCode.
+    Mục khác chạy cùng server (`... -m sac_mcp.server`) được gỡ để không trùng tool.
+    """
+    oc = opencode_home()
+    if not oc.is_dir():
+        return None
+    cfg_path = oc / "opencode.json"
+    if not cfg_path.exists() and (oc / "opencode.jsonc").exists():
+        sys.stderr.write(
+            f"⚠️  Bỏ qua OpenCode: máy đang dùng {oc / 'opencode.jsonc'} (có chú thích) - setup không sửa tự động. "
+            f"Thêm mục mcp 'sac' bằng tay: {json.dumps(opencode_mcp_entry(py_exec, src_dir), ensure_ascii=False)}\n"
+        )
+        return None
+    cfg: Dict[str, Any] = {}
+    if cfg_path.exists():
+        raw = cfg_path.read_text(encoding="utf-8")
+        try:
+            cfg = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Không đọc được {cfg_path} (JSON lỗi: {exc}). Hãy sửa file này rồi chạy lại.") from exc
+    cfg.setdefault("$schema", "https://opencode.ai/config.json")
+    servers = cfg.setdefault("mcp", {})
+    removed = [
+        name for name, srv in list(servers.items())
+        if name != "sac" and isinstance(srv, dict) and list(srv.get("command") or [])[-2:] == SAC_MCP_ARGS
+    ]
+    for name in removed:
+        del servers[name]
+    servers["sac"] = opencode_mcp_entry(py_exec, src_dir)
+    _write_atomic(cfg_path, json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
+    dst_root = oc / "skills"
+    return {"config": str(cfg_path), "skills_dir": str(dst_root),
+            "skills": _copy_skills(root_dir, dst_root), "removed_duplicates": removed}
+
+
 def codex_home() -> Path:
     return Path.home() / ".codex"
 
@@ -268,10 +323,11 @@ def setup_workspace(
     claude_code: bool = True,
     antigravity: bool = True,
     codex: bool = True,
+    opencode: bool = True,
 ) -> Dict[str, Any]:
     """
     Cấu hình đường dẫn tuyệt đối của máy hiện tại cho `.agents/mcp_config.json`, `opencode.json`
-    và (mặc định, nếu máy có cài) Claude Code, Antigravity (`~/.gemini/antigravity/`), Codex (`~/.codex/`),
+    và (mặc định, nếu máy có cài) Claude Code, Antigravity (`~/.gemini/antigravity/`), Codex (`~/.codex/`), OpenCode (`~/.config/opencode/`),
     giúp người mới clone repo về máy bất kỳ đều chạy được ngay MCP server và Skill.
     """
     root_dir = Path(root_dir).resolve()
@@ -317,6 +373,7 @@ def setup_workspace(
     claude_info = setup_claude_code(root_dir, py_exec, src_dir) if claude_code else None
     antigravity_info = setup_antigravity_global(root_dir, py_exec, src_dir) if antigravity else None
     codex_info = setup_codex(root_dir, py_exec, src_dir) if codex else None
+    opencode_info = setup_opencode_global(root_dir, py_exec, src_dir) if opencode else None
     return {
         "root_dir": root_dir.as_posix(),
         "python_command": py_exec,
@@ -326,6 +383,7 @@ def setup_workspace(
         "claude_code": claude_info,
         "antigravity": antigravity_info,
         "codex": codex_info,
+        "opencode": opencode_info,
     }
 
 
