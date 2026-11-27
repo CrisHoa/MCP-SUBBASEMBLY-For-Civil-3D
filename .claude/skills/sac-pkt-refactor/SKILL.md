@@ -3,6 +3,8 @@ name: sac-pkt-refactor
 description: Biến đổi, tái cấu trúc, dời điểm gốc chèn (Re-anchor Origin sang P4, P10 hoặc điểm bất kỳ), lật đối xứng Trái/Phải (Mirror TR/PH), tham số hóa số cứng và chuyển đổi phiên bản Civil 3D (2025/2026/2027) cho file Subassembly Composer (.pkt) có sẵn hoặc file đang mở trực tiếp trong SAC.
 ---
 
+> **Bản quyền © 2025-2026 CrisHoa. Bảo lưu mọi quyền.** Skill này là tài sản độc quyền, chỉ dành cho người được cấp phép. Cấm sao chép, chia sẻ, đăng lại, chỉnh sửa hoặc dùng để tạo skill / prompt / mô hình AI khác khi chưa được phép bằng văn bản. Xem file `LICENSE` trong kho mã. *Copyright © 2025-2026 CrisHoa. All rights reserved. Proprietary - do not copy or redistribute.*
+
 # Biến Đổi, Dời Điểm Gốc & Lật Đối Xứng Subassembly (`sac-pkt-refactor`)
 
 Skill này chuyên xử lý các yêu cầu **biến đổi từ một file `.pkt` có sẵn (hoặc file người dùng đang mở trong Subassembly Composer)** sang một biến thể mới mà **bảo toàn tuyệt đối 100% hình học, kích thước, mã Code (Point/Link/Shape), ảnh thumbnail và vượt qua kiểm định 3 tầng**.

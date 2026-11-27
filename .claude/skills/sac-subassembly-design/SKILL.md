@@ -3,6 +3,8 @@ name: sac-subassembly-design
 description: Thiết kế, tạo mới, sửa, kiểm tra subassembly Autodesk Civil 3D Subassembly Composer (SAC, file .pkt) bằng MCP server sac-mcp-server. Dùng khi người dùng muốn dựng / sửa / kiểm định mặt cắt ngang (cross-section), làn xe, siêu cao, lề, taluy đào đắp, giật cơ, rãnh biên, bó vỉa, vỉa hè, tường chắn, kết cấu áo đường, vét hữu cơ, phui đào cống, hoặc khi nhắc tới Subassembly Composer, file .pkt, Point / Link / Shape, Target Parameter, "design a subassembly", "create/fix/validate a .pkt", "SAC flowchart", "cross section for Civil 3D".
 ---
 
+> **Bản quyền © 2025-2026 CrisHoa. Bảo lưu mọi quyền.** Skill này là tài sản độc quyền, chỉ dành cho người được cấp phép. Cấm sao chép, chia sẻ, đăng lại, chỉnh sửa hoặc dùng để tạo skill / prompt / mô hình AI khác khi chưa được phép bằng văn bản. Xem file `LICENSE` trong kho mã. *Copyright © 2025-2026 CrisHoa. All rights reserved. Proprietary - do not copy or redistribute.*
+
 # Thiết kế Subassembly (.pkt) với `sac-mcp-server`
 
 Skill này hướng dẫn dựng một Subassembly SAC **từ bản vẽ mặt cắt tới file `.pkt` qua được kiểm định 3 tầng**

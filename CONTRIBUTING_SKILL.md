@@ -88,3 +88,9 @@ Khi các thành viên đã đẩy nhánh `skill/*` lên GitHub:
    .\sac-cli.bat skill merge skill/minh-tuong-chan
    git push origin Civil3D
    ```
+
+---
+
+## Bản Quyền Đóng Góp
+
+Kho mã này là phần mềm độc quyền (xem `LICENSE`). Khi gửi bài học, mẫu `.pkt`, ghi chú hoặc bất kỳ nội dung nào vào kho mã, bạn đồng ý chuyển giao nội dung đó cho chủ bản quyền và nội dung chịu cùng giấy phép độc quyền. Không mang skill / nội dung của kho mã này sang dự án hay kho mã khác.

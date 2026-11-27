@@ -1,0 +1,69 @@
+GIẤY PHÉP SỬ DỤNG ĐỘC QUYỀN / PROPRIETARY LICENSE
+
+Copyright (c) 2025-2026 CrisHoa. Bảo lưu mọi quyền. All rights reserved.
+
+Phần mềm này bao gồm toàn bộ mã nguồn, MCP server, AI Agent Skills
+(thư mục .claude/skills/, .agents/skills/ và mọi bản sao của chúng), tài liệu
+tham khảo, công thức, quy tắc thiết kế, mẫu Subassembly (.pkt), spec JSON,
+script và tài liệu hướng dẫn trong kho mã này ("Phần mềm").
+
+TIẾNG VIỆT
+
+1. Phần mềm là tài sản trí tuệ thuộc quyền sở hữu độc quyền của chủ bản quyền.
+   Không có quyền nào được cấp cho bạn ngoại trừ những quyền được ghi rõ trong
+   văn bản cho phép riêng do chủ bản quyền ký.
+
+2. Nếu chưa được chủ bản quyền cho phép bằng văn bản, bạn KHÔNG được:
+   a) sao chép, nhân bản, clone, fork, tải lại (re-upload) hoặc lưu trữ Phần mềm
+      hay bất kỳ phần nào của Phần mềm, kể cả nội dung các file SKILL.md và
+      thư mục reference/;
+   b) phân phối, chia sẻ, bán, cho thuê, cấp phép lại hoặc công bố Phần mềm
+      cho bên thứ ba dưới bất kỳ hình thức nào;
+   c) sửa đổi, dịch, chuyển thể, tạo sản phẩm phái sinh, hoặc dùng nội dung
+      Phần mềm để huấn luyện / làm dữ liệu cho skill, prompt, mô hình AI khác;
+   d) gỡ bỏ hoặc thay đổi thông báo bản quyền và giấy phép này.
+
+3. Người được chủ bản quyền mời truy cập kho mã chỉ được cài đặt và sử dụng
+   Phần mềm trên máy của chính mình cho công việc được chủ bản quyền đồng ý,
+   trong thời gian được cho phép. Quyền này chấm dứt ngay khi chủ bản quyền
+   thu hồi; khi đó phải xóa mọi bản sao của Phần mềm.
+
+4. Nội dung do thành viên đóng góp vào kho mã (bài học, mẫu .pkt, ghi chú
+   skill...) được chuyển giao cho chủ bản quyền và chịu giấy phép này.
+
+5. Phần mềm được cung cấp "NGUYÊN TRẠNG", không kèm bất kỳ bảo đảm nào. Chủ bản
+   quyền không chịu trách nhiệm về bất kỳ thiệt hại nào phát sinh từ việc sử
+   dụng Phần mềm, kể cả sai sót trong thiết kế, khối lượng hay bản vẽ.
+
+6. Vi phạm giấy phép này có thể bị xử lý theo pháp luật về sở hữu trí tuệ.
+
+ENGLISH
+
+1. The Software is the exclusive intellectual property of the copyright holder.
+   No rights are granted to you except as expressly stated in a separate written
+   permission signed by the copyright holder.
+
+2. Without prior written permission from the copyright holder, you may NOT:
+   a) copy, reproduce, clone, fork, re-upload or store the Software or any part
+      of it, including the contents of SKILL.md files and reference/ folders;
+   b) distribute, share, sell, rent, sublicense or publish the Software to any
+      third party in any form;
+   c) modify, translate, adapt, create derivative works of, or use the Software's
+      content to build or train other skills, prompts or AI models;
+   d) remove or alter this copyright and license notice.
+
+3. Persons invited by the copyright holder to access the repository may only
+   install and use the Software on their own machine, for work approved by the
+   copyright holder, for the period permitted. This permission ends immediately
+   when revoked by the copyright holder; all copies must then be deleted.
+
+4. Contributions made to the repository (lessons, .pkt templates, skill notes,
+   etc.) are assigned to the copyright holder and are subject to this license.
+
+5. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
+   SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF
+   THE SOFTWARE, INCLUDING ERRORS IN DESIGNS, QUANTITIES OR DRAWINGS.
+
+6. Violations of this license may be prosecuted under intellectual property law.
+
+Liên hệ xin cấp phép / Licensing contact: https://github.com/CrisHoa
