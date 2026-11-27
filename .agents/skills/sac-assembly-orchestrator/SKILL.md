@@ -3,6 +3,8 @@ name: sac-assembly-orchestrator
 description: Ghép nối tổ hợp nhiều Subassembly (.pkt) thành mặt cắt ngang hoàn chỉnh (Assembly) trong Civil 3D, đồng bộ điểm nối MarkPoint (SetMarkPoint/GetMarkPoint), kiểm tra tính liên tục của bề mặt Top/Datum và lập bảng chuẩn hóa mã Code (Point/Link/Shape Codes) phục vụ tính khối lượng QTO và xuất 3D Solid BIM.
 ---
 
+> **Bản quyền © 2025-2026 CrisHoa. Bảo lưu mọi quyền.** Skill này là tài sản độc quyền, chỉ dành cho người được cấp phép. Cấm sao chép, chia sẻ, đăng lại, chỉnh sửa hoặc dùng để tạo skill / prompt / mô hình AI khác khi chưa được phép bằng văn bản. Xem file `LICENSE` trong kho mã. *Copyright © 2025-2026 CrisHoa. All rights reserved. Proprietary - do not copy or redistribute.*
+
 # Ghép Nối Tổ Hợp Subassembly, Chuẩn Hóa Bề Mặt & Khối Lượng (`sac-assembly-orchestrator`)
 
 Skill này điều phối việc **kết hợp nhiều file `.pkt` độc lập** thành một **Tổ hợp Mặt cắt ngang hoàn chỉnh (Civil 3D Assembly)**, đảm bảo khi chạy **Corridor** không bị đứt gãy điểm nối, không bị thủng bề mặt `Top` / `Datum` và bóc tách chính xác 100% khối lượng đào đắp, kết cấu áo đường cũng như xuất mô hình 3D Solid BIM.

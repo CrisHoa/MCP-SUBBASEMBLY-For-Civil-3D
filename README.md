@@ -1,3 +1,5 @@
+> **Proprietary software — © 2025-2026 CrisHoa. All rights reserved.** Copying, forking, redistributing or reusing the code, skills or reference content without written permission is prohibited. See [LICENSE](LICENSE).
+
 ## 1. Setup
 
 Requires Python 3.10+ on PATH (Git for Windows for the git hooks).
@@ -108,3 +110,7 @@ Contributors can add `.pkt` templates or design rules on isolated Git branches w
 .\sac-cli.bat skill branches --fetch
 .\sac-cli.bat skill merge skill/retaining-wall
 ```
+
+## License
+
+Proprietary — **all rights reserved** (see [LICENSE](LICENSE)). Access is granted only to people invited by the copyright holder, for their own use; copying, sharing, publishing, modifying or using the skills / reference content to build other skills, prompts or AI models requires written permission. Contributions are assigned to the copyright holder.

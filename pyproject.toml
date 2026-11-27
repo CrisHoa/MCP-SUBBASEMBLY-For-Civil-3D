@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Model Context Protocol (MCP) Server for Autodesk Civil 3D Subassembly Composer (.pkt) - Supports Civil 3D 2025, 2026, 2027"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "Proprietary - All rights reserved. See LICENSE." }
 authors = [
     { name = "Civil 3D Subassembly Automation Team" }
 ]

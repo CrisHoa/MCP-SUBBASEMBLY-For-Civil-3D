@@ -3,6 +3,8 @@ name: sac-cad-to-pkt
 description: Giải phẫu bản vẽ mặt cắt ngang kỹ thuật từ AutoCAD (DWG/DXF), PDF hoặc ảnh chụp màn hình mặt cắt (tỷ lệ 1/10, 1/20, 1/25, 1/50...) để tự động phân tích miền vật liệu, lập bảng tọa độ điểm, thiết kế tham số động và xuất ra file Subassembly Composer (.pkt) đạt chuẩn kiểm định 3 tầng.
 ---
 
+> **Bản quyền © 2025-2026 CrisHoa. Bảo lưu mọi quyền.** Skill này là tài sản độc quyền, chỉ dành cho người được cấp phép. Cấm sao chép, chia sẻ, đăng lại, chỉnh sửa hoặc dùng để tạo skill / prompt / mô hình AI khác khi chưa được phép bằng văn bản. Xem file `LICENSE` trong kho mã. *Copyright © 2025-2026 CrisHoa. All rights reserved. Proprietary - do not copy or redistribute.*
+
 # Giải Phẫu Bản Vẽ Mặt Cắt CAD / Ảnh Sang Subassembly (`sac-cad-to-pkt`)
 
 Skill này hướng dẫn quy trình chuyển hóa **một bản vẽ mặt cắt ngang kết cấu hoặc đường giao thông** (từ ảnh chụp CAD, file `.dwg`/`.dxf` hoặc `.pdf`) thành **cấu kiện Subassembly `.pkt` tham số hóa 100%** cho Autodesk Civil 3D.
