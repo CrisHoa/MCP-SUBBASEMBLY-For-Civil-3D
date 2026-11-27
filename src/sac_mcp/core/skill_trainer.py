@@ -99,22 +99,24 @@ def sync_skills(root_dir: Path = ROOT_DIR, sync_global: bool = False) -> Dict[st
     shutil.copytree(src, dst)
 
     copied = sum(1 for p in dst.rglob("*") if p.is_file())
-    global_synced = None
-    global_skill_dir = Path.home() / ".gemini" / "config" / "skills" / SKILL_NAME
-    if sync_global or global_skill_dir.exists():
-        src_skill = src / SKILL_NAME
-        if src_skill.exists():
-            if global_skill_dir.exists():
-                shutil.rmtree(global_skill_dir)
-            global_skill_dir.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src_skill, global_skill_dir)
-            global_synced = str(global_skill_dir)
+    global_synced_dirs: List[str] = []
+    global_skills_root = Path.home() / ".gemini" / "config" / "skills"
+    for src_skill in sorted(src.iterdir()):
+        if not src_skill.is_dir():
+            continue
+        target_global = global_skills_root / src_skill.name
+        if sync_global or target_global.exists():
+            if target_global.exists():
+                shutil.rmtree(target_global)
+            target_global.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src_skill, target_global)
+            global_synced_dirs.append(str(target_global))
 
     return {
         "source": str(src),
         "mirror": str(dst),
         "files_synced": copied,
-        "global_skill_synced": global_synced,
+        "global_skill_synced": ", ".join(global_synced_dirs) if global_synced_dirs else None,
     }
 
 
