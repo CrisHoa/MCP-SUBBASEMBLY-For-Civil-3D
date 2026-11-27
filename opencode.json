@@ -9,7 +9,7 @@
         "sac_mcp.server"
       ],
       "environment": {
-        "PYTHONIOENCODING": "utf-8"
+        "PYTHONPATH": "C:/Users/Admin/Desktop/MCP - SUBBASEMBLY/src"
       },
       "enabled": true
     }
