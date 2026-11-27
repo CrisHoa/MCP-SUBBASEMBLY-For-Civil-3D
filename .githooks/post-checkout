@@ -1,0 +1,4 @@
+#!/bin/sh
+# Sau khi đổi nhánh ($3 = 1); bỏ qua khi chỉ checkout file
+[ "$3" = "1" ] || exit 0
+exec sh "$(git rev-parse --show-toplevel)/.githooks/_sac_update.sh"

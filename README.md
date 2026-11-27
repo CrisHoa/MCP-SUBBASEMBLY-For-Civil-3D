@@ -1,12 +1,18 @@
 ## 1. Setup
 
-Requires Python 3.10+ on PATH. After `git clone` (and again after any `git pull`), run once from the repo folder:
+Requires Python 3.10+ on PATH (Git for Windows for the git hooks).
+
+**Automatic (Claude Code):** `git clone`, open Claude Code in the repo folder and trust it. The `SessionStart` hook in `.claude/settings.json` runs `scripts/sac_auto_setup.py`, which installs everything missing (first run ≈ 1 min, later runs ≈ 0.2 s and silent). **Open a second session** to get the `sac` tools — MCP servers load only at session start.
+
+**Manual (any agent):** run once from the repo folder:
 
 ```powershell
 .\setup.bat
 ```
 
-`setup.bat` creates `.venv`, installs the dependencies, then runs `sac-cli skill setup`, which writes the paths of **this machine** into:
+**Auto-update after `git pull`:** setup sets `git config core.hooksPath .githooks`, so `post-merge` / `post-rewrite` / `post-checkout` re-run the quick check after every pull or branch switch: changed skills are re-copied, and dependencies are reinstalled only when `pyproject.toml` changed.
+
+Setup creates `.venv`, installs the dependencies, then runs `sac-cli skill setup`, which writes the paths of **this machine** into (`.agents/mcp_config.json` and `opencode.json` are generated per machine and git-ignored):
 
 | Agent | MCP server `sac` | Skills |
 | :--- | :--- | :--- |

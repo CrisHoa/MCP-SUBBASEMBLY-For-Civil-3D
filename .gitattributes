@@ -1,0 +1,3 @@
+# Git hook phai giu LF de sh chay duoc tren moi may
+.githooks/* text eol=lf
+*.bat text eol=crlf

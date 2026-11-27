@@ -40,3 +40,7 @@ decompiled_visual/
 
 
 *.bak
+
+# Cau hinh MCP rieng tung may - do setup.bat / sac_auto_setup.py tu sinh
+.agents/mcp_config.json
+opencode.json
